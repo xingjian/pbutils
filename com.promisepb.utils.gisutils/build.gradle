@@ -1,0 +1,53 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+
+version=0.1
+sourceCompatibility = 1.8 
+targetCompatibility = 1.8  
+
+repositories {
+	mavenLocal()
+    jcenter()
+}
+
+ext{
+	slf4jVersion = "1.7.25"
+	log4jVersion = "1.2.17"
+	junitVersion = "4.12"
+	geotoolsVersion = "14-M0"
+	poiVersion = "3.12"
+}
+
+dependencies {
+	compile "log4j:log4j:$log4jVersion"
+    compile "org.slf4j:slf4j-api:$slf4jVersion"
+    compile "org.geotools:gt-shapefile:$geotoolsVersion"
+    compile "org.geotools:gt-epsg-hsql:$geotoolsVersion"
+    compile "org.geotools:gt-referencing:$geotoolsVersion"
+    compile "org.geotools:gt-geojson:$geotoolsVersion"
+    compile "org.geotools:gt-wfs:$geotoolsVersion"
+    compile "org.geotools:gt-arcsde:$geotoolsVersion"
+    compile "org.geotools.jdbc:gt-jdbc-oracle:$geotoolsVersion"
+    compile "org.geotools.jdbc:gt-jdbc-mysql:$geotoolsVersion"
+    compile "org.geotools.jdbc:gt-jdbc-oracle:$geotoolsVersion"
+    compile "org.geotools.jdbc:gt-jdbc-postgis:$geotoolsVersion"
+    compile "org.geotools:gt-swing:$geotoolsVersion"
+    compile "org.geotools:gt-ogr-jni:$geotoolsVersion"
+    compile "org.geotools.xsd:gt-xsd-filter:$geotoolsVersion"
+    compile "com.promisepb.utils::0.1"
+    compile "org.apache.poi:poi:$poiVersion"
+    compile "org.apache.poi:poi-ooxml:$poiVersion"
+    compile files('../com.promisepb.utils.stringutils/build/libs/com.promisepb.utils.stringutils-0.1.jar')
+    compile files('../com.promisepb.utils.httputils/build/libs/com.promisepb.utils.httputils-0.1.jar')
+    compile files('../com.promisepb.utils.fileutils/build/libs/com.promisepb.utils.fileutils-0.1.jar')
+    testCompile "junit:junit:$junitVersion"
+}
+
+[compileJava, compileTestJava, javadoc]*.options*.encoding = "UTF-8"
+
+task createJavaProject  {
+	doLast {
+		sourceSets*.java.srcDirs*.each{ it.mkdirs() }
+		sourceSets*.resources.srcDirs*.each{ it.mkdirs()}
+	}
+}
