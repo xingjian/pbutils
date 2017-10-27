@@ -6,6 +6,7 @@ package com.promisepb.utils.gisutils;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -21,9 +22,12 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.opengis.feature.simple.SimpleFeature;
 
+import com.vividsolutions.jts.algorithm.Angle;
 import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.CoordinateSequence;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.LineSegment;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.LinearRing;
 import com.vividsolutions.jts.geom.MultiLineString;
@@ -31,6 +35,7 @@ import com.vividsolutions.jts.geom.MultiPoint;
 import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
+import com.vividsolutions.jts.geom.impl.PackedCoordinateSequenceFactory;
 import com.vividsolutions.jts.io.ParseException;
 import com.vividsolutions.jts.io.WKTReader;
 import com.vividsolutions.jts.operation.linemerge.LineMerger;
@@ -843,4 +848,360 @@ public class PBGTGeometryUtil {
         }
         return sfList;
     }
+    
+    /**
+     * 计算84坐标系两点之间的距离
+     * @param x1 经度
+     * @param y1 纬度
+     * @param x2 经度
+     * @param y2 纬度
+     * @return 两点直接的距离米
+     */
+    public static double GetDistance84(double x1,double y1,double x2,double y2){
+        double lon1 = x1;
+        double lat1 = y1;
+        double lon2 = x2;
+        double lat2 = y2;
+        double a = 6378137;
+        double b = 6356752.3142;
+        double f = 1 / 298.257223563;
+        double L = Math.toRadians(lon2 - lon1);
+        double U1 = Math.atan((1 - f) * Math.tan(Math.toRadians(lat1)));
+        double U2 = Math.atan((1 - f) * Math.tan(Math.toRadians(lat2)));
+        double sinU1 = Math.sin(U1), cosU1 = Math.cos(U1);
+        double sinU2 = Math.sin(U2), cosU2 = Math.cos(U2);
+        double lambda = L;
+        double lambdaP = 0.0;
+        double iterLimit = 100;
+        double cosSqAlpha = 0.0;
+        double cos2SigmaM = 0.0;
+        double sinSigma = 0.0;
+        double sinLambda = 0.0;
+        double cosLambda = 0.0;
+        double cosSigma = 0.0;
+        double sigma = 0.0;
+        do {
+            sinLambda = Math.sin(lambda);
+            cosLambda = Math.cos(lambda);
+            sinSigma = Math.sqrt((cosU2 * sinLambda) * (cosU2 * sinLambda) + (cosU1 * sinU2 - sinU1 * cosU2 * cosLambda) * (cosU1 * sinU2 - sinU1 * cosU2 * cosLambda));
+            if(sinSigma == 0)
+                return 0;
+            cosSigma = sinU1 * sinU2 + cosU1 * cosU2 * cosLambda;
+            sigma = Math.atan2(sinSigma, cosSigma);
+            double sinAlpha = cosU1 * cosU2 * sinLambda / sinSigma;
+            cosSqAlpha = 1 - sinAlpha * sinAlpha;
+            cos2SigmaM = cosSigma - 2 * sinU1 * sinU2 / cosSqAlpha;
+            double C = f / 16 * cosSqAlpha * (4 + f * (4 - 3 * cosSqAlpha));
+            lambdaP = lambda;
+            lambda = L + (1 - C) * f * sinAlpha * (sigma + C * sinSigma * (cos2SigmaM + C * cosSigma * (-1 + 2 * cos2SigmaM * cos2SigmaM)));
+        }while (Math.abs(lambda-lambdaP) > (1e-12) && --iterLimit>0);
+        if(iterLimit == 0) {
+            return -1.0;
+        }
+        double uSq = cosSqAlpha * (a * a - b * b) / (b * b);
+        double  A = 1 + uSq / 16384 * (4096 + uSq * (-768 + uSq * (320 - 175 * uSq)));
+        double  B = uSq / 1024 * (256 + uSq * (-128 + uSq * (74 - 47 * uSq)));
+        double  deltaSigma = B * sinSigma * (cos2SigmaM + B / 4 * (cosSigma * (-1 + 2 * cos2SigmaM * cos2SigmaM) - B / 6 * cos2SigmaM * (-3 + 4 * sinSigma * sinSigma) * (-3 + 4 * cos2SigmaM * cos2SigmaM)));
+        double  s = b * A * (sigma - deltaSigma);
+        return s;        
+    }
+    
+    /**
+     * 点投影到线 返回投影的坐标点
+     * @param point 原始点
+     * @param line 参考线
+     * @param check 是否检查点的合理性 
+     * @return
+     */
+    public static Point PointPojectLine(Point point,LineString line,boolean check) {
+    	Point result = null;
+    	
+    	return result;
+    }
+    
+    /**
+     * 平行线生成
+     * @param line 原始线
+     * @param orientation
+     * @param distance
+     * @return
+     */
+	public static LineString createParallelLineString(final LineString line, final int orientation,final double distance) {
+		GeometryFactory factory = line.getFactory();
+		CoordinateSequence coordinates = line.getCoordinateSequence();
+		List<Coordinate> newCoordinates = new ArrayList<Coordinate>();
+		Coordinate coordinate = coordinates.getCoordinate(0);
+		LineSegment lastLineSegment = null;
+		int coordinateCount = coordinates.size();
+		for (int i = 0; i < coordinateCount; i++) {
+			Coordinate nextCoordinate = null;
+			LineSegment lineSegment = null;
+			if (i < coordinateCount - 1) {
+				nextCoordinate = coordinates.getCoordinate(i + 1);
+				lineSegment = new LineSegment(coordinate, nextCoordinate);
+				lineSegment = offset(lineSegment, distance, orientation);
+			}
+			if (lineSegment == null) {
+				newCoordinates.add(lastLineSegment.p1);
+			} else if (lastLineSegment == null) {
+				newCoordinates.add(lineSegment.p0);
+			} else {
+				Coordinate intersection = lastLineSegment.intersection(lineSegment);
+				if (intersection != null) {
+					newCoordinates.add(intersection);
+				} else {
+					newCoordinates.add(lineSegment.p0);
+				}
+			}
+			coordinate = nextCoordinate;
+			lastLineSegment = lineSegment;
+		}
+		CoordinateSequence newCoords = PackedCoordinateSequenceFactory.DOUBLE_FACTORY.create(newCoordinates.toArray(new Coordinate[0]));
+		return factory.createLineString(newCoords);
+	}
+
+	/**
+	 * LineSegment 偏移
+	 * @param line
+	 * @param distance
+	 * @param orientation
+	 * @return
+	 */
+	public static LineSegment offset(final LineSegment line, final double distance, final int orientation) {
+		double angle = line.angle();
+		if (orientation == Angle.CLOCKWISE) {
+			angle -= Angle.PI_OVER_2;
+		} else {
+			angle += Angle.PI_OVER_2;
+		}
+		Coordinate c1 = offset(line.p0, angle, distance);
+		Coordinate c2 = offset(line.p1, angle, distance);
+		return new LineSegment(c1, c2);
+	}
+
+	/**
+	 * Coordinate 偏移
+	 * @param coordinate
+	 * @param angle
+	 * @param distance
+	 * @return
+	 */
+	public static Coordinate offset(final Coordinate coordinate, final double angle, final double distance) {
+		double newX = coordinate.x + distance * Math.cos(angle);
+		double newY = coordinate.y + distance * Math.sin(angle);
+		Coordinate newCoordinate = new Coordinate(newX, newY);
+		return newCoordinate;
+	}
+	
+	/**
+	 * LineSegment 变长
+	 * @param line
+	 * @param startDistance
+	 * @param endDistance
+	 * @return
+	 */
+	public static LineSegment addLength(final LineSegment line, final double startDistance, final double endDistance) {
+		    double angle = line.angle();
+		    Coordinate c1 = offset(line.p0, angle, -startDistance);
+		    Coordinate c2 = offset(line.p1, angle, endDistance);
+		    return new LineSegment(c1, c2);
+	}
+	
+	/**
+	 * 分割线
+	 * @param line
+	 * @param coordinate
+	 * @return
+	 */
+	public static List<LineString> splitLineString(final LineString line, final Coordinate coordinate) {
+		int[] indexes = findClosestSegmentAndCoordinate(line, coordinate);
+		int segmentIndex = indexes[0];
+		if (segmentIndex != -1) {
+			int coordinateIndex = indexes[1];
+			boolean exactMatch = coordinateIndex == 1;
+			if (coordinateIndex == 0) {
+				if (exactMatch) {
+					return Collections.singletonList(line);
+				} else {
+					Coordinate c0 = line.getCoordinateN(0);
+					Coordinate c1;
+					int i = 1;
+					do {
+						c1 = line.getCoordinateN(i);
+						i++;
+					} while (c1.equals(c0));
+
+					if (Angle.isAcute(c1, c0, coordinate)) {
+						Coordinate projectedCoordinate = new LineSegment(c0, c1).project(coordinate);
+						return split(line, 1, projectedCoordinate);
+					} else {
+						return Collections.singletonList(line);
+					}
+				}
+			} else if (coordinateIndex == line.getNumPoints() - 1) {
+				if (exactMatch) {
+					return Collections.singletonList(line);
+				} else {
+					Coordinate cn = line.getCoordinateN(line.getNumPoints() - 1);
+					Coordinate cn1;
+					int i = line.getNumPoints() - 2;
+					do {
+						cn1 = line.getCoordinateN(i);
+						i++;
+					} while (cn1.equals(cn));
+					if (Angle.isAcute(cn1, cn, coordinate)) {
+						Coordinate projectedCoordinate = new LineSegment(cn, cn1).project(coordinate);
+						return split(line, line.getNumPoints() - 1, projectedCoordinate);
+					} else {
+						return Collections.singletonList(line);
+					}
+				}
+			} else {
+				Coordinate c = line.getCoordinateN(segmentIndex);
+				Coordinate c1;
+				int i = segmentIndex + 1;
+				do {
+					c1 = line.getCoordinateN(i);
+					i++;
+				} while (c.equals(c1));
+				Coordinate projectedCoordinate = new LineSegment(c, c1).project(coordinate);
+				return split(line, segmentIndex, projectedCoordinate);
+			}
+		} else {
+			return Collections.emptyList();
+		}
+	}
+
+	/**
+	 * findClosestSegmentAndCoordinate
+	 * @param line
+	 * @param coordinate
+	 * @return
+	 */
+	public static int[] findClosestSegmentAndCoordinate(final LineString line, final Coordinate coordinate) {
+		int[] closest = new int[] { -1, -1, 0 };
+		double closestDistance = Double.MAX_VALUE;
+		CoordinateSequence coordinates = line.getCoordinateSequence();
+		Coordinate previousCoord = coordinates.getCoordinate(0);
+		double previousCoordinateDistance = previousCoord.distance(coordinate);
+		if (previousCoordinateDistance == 0) {
+			closest[0] = 0;
+			closest[1] = 0;
+			closest[2] = 1;
+		} else {
+			for (int i = 1; i < coordinates.size(); i++) {
+				Coordinate currentCoordinate = coordinates.getCoordinate(i);
+				double currentCoordinateDistance = currentCoordinate.distance(coordinate);
+				if (currentCoordinateDistance == 0) {
+					closest[0] = i;
+					closest[1] = i;
+					closest[2] = 1;
+					return closest;
+				}
+				LineSegment lineSegment = new LineSegment(previousCoord, currentCoordinate);
+				double distance = lineSegment.distance(coordinate);
+				if (distance == 0) {
+					closest[0] = i - 1;
+					if (previousCoordinateDistance < currentCoordinateDistance) {
+						closest[1] = i - 1;
+					} else {
+						closest[1] = i;
+					}
+					return closest;
+				} else if (distance < closestDistance) {
+					closestDistance = distance;
+					closest[0] = i - 1;
+					if (previousCoordinateDistance < currentCoordinateDistance) {
+						closest[1] = i - 1;
+					} else {
+						closest[1] = i;
+					}
+				}
+				previousCoord = currentCoordinate;
+			}
+		}
+		return closest;
+	}
+	
+	/**
+	 * split
+	 * @param line
+	 * @param index
+	 * @param coordinate
+	 * @return
+	 */
+	public static List<LineString> split(final LineString line, final int index, final Coordinate coordinate) {
+		List<LineString> lines = new ArrayList<LineString>();
+		boolean containsCoordinate = coordinate.equals(line.getCoordinateN(index));
+		CoordinateSequence coords = line.getCoordinateSequence();
+		int dimension = coords.getDimension();
+		int coords1Size;
+		int coords2Size = coords.size() - index;
+		if (containsCoordinate) {
+			coords1Size = index + 1;
+			coords2Size = coords.size() - index;
+		} else {
+			coords1Size = index + 2;
+			coords2Size = coords.size() - index;
+		}
+		CoordinateSequence coords1 = PackedCoordinateSequenceFactory.DOUBLE_FACTORY.create(coords1Size, dimension);
+		copyCoords(coords, 0, coords1, 0, index + 1);
+		if (!containsCoordinate) {
+			setCoordinate(coords1, coords1Size - 1, coordinate);
+		}
+		CoordinateSequence coords2 = PackedCoordinateSequenceFactory.DOUBLE_FACTORY.create(coords2Size, dimension);
+		if (!containsCoordinate) {
+			setCoordinate(coords2, 0, coordinate);
+			copyCoords(coords, index + 1, coords2, 1, coords2.size() - 1);
+		} else {
+			copyCoords(coords, index, coords2, 0, coords2.size());
+		}
+		GeometryFactory geometryFactory = line.getFactory();
+		if (coords1Size > 1) {
+			LineString line1 = geometryFactory.createLineString(coords1);
+			if (line1.getLength() > 0) {
+				lines.add(line1);
+			}
+		}
+		if (coords2Size > 1) {
+			LineString line2 = geometryFactory.createLineString(coords2);
+			if (line2.getLength() > 0) {
+				lines.add(line2);
+			}
+		}
+		return lines;
+	}
+
+	/**
+	 * copyCoords
+	 * @param src
+	 * @param srcPos
+	 * @param dest
+	 * @param destPos
+	 * @param length
+	 */
+	public static void copyCoords(final CoordinateSequence src, final int srcPos, final CoordinateSequence dest,
+			final int destPos, final int length) {
+		int dimension = Math.min(src.getDimension(), dest.getDimension());
+		for (int i = 0; i < length; i++) {
+			for (int j = 0; j < dimension; j++) {
+				double ordinate = src.getOrdinate(srcPos + i, j);
+				dest.setOrdinate(destPos + i, j, ordinate);
+			}
+		}
+	}
+
+	/**
+	 * setCoordinate
+	 * @param coordinates
+	 * @param i
+	 * @param coordinate
+	 */
+	public static void setCoordinate(final CoordinateSequence coordinates, final int i, final Coordinate coordinate) {
+		coordinates.setOrdinate(i, 0, coordinate.x);
+		coordinates.setOrdinate(i, 1, coordinate.y);
+		if (coordinates.getDimension() > 2) {
+			coordinates.setOrdinate(i, 2, coordinate.z);
+		}
+	}
 }

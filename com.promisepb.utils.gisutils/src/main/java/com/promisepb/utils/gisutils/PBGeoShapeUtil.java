@@ -26,7 +26,10 @@ import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.geotools.data.DataStore;
+import org.geotools.data.DefaultTransaction;
 import org.geotools.data.FeatureSource;
+import org.geotools.data.FeatureStore;
 import org.geotools.data.FeatureWriter;
 import org.geotools.data.Transaction;
 import org.geotools.data.shapefile.ShapefileDataStore;
@@ -696,4 +699,40 @@ public class PBGeoShapeUtil {
             return false;
         }
     }
+    
+    /**
+     * 通过dataStore导入shape文件
+     * 目前不能使用,因为获取的几何对象类型有出入,比如line变成多线，面变成多面
+     * 传入几何类型和坐标信息
+     * @param shapePath shape路径
+     * @param dataStore dataStore对象 请参考ConnPostGis方法获取
+     * @param charSet 读取shape文件编码设置
+     * @param tableName 表名
+     * @return 运行结果状态
+     */
+    public static String ShapeToPostGIS(String shapePath,DataStore dataStore,String charSet,String tableName,Class classzs,String crs){
+        String result = "success";
+        String createTableResult = PBGISDBUtil.CreateTableSchema(tableName,shapePath,dataStore,charSet,classzs,crs);
+        if("success".equals(createTableResult)){
+            Transaction tran = new DefaultTransaction("add");
+            try {
+                SimpleFeatureSource sfs = dataStore.getFeatureSource(tableName);
+                SimpleFeatureType sft = dataStore.getSchema(tableName);
+                FeatureStore featureStore = (FeatureStore) sfs;
+                SimpleFeatureCollection features = PBGeoShapeUtil.ReadShapeFileFeatures(shapePath, charSet);
+                featureStore.setTransaction(tran);
+                featureStore.addFeatures(features);
+                tran.commit();
+                dataStore.dispose();
+            } catch (Exception e) {
+                e.printStackTrace();
+                try {
+                    tran.rollback();
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+            }
+        }
+        return result;
+    } 
 }
