@@ -13,6 +13,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -35,12 +36,42 @@ import java.util.zip.ZipInputStream;
  */
 public class PBFileUtil {
 
+	
+	 /**
+     * 读取文件按行读取去除两边空格之后,将每行加入到集合list当中
+     * 目前支持txt文档
+     * @param filePath 文件路径
+     * @param charSet 读取文件编码
+     * @return 字符串集合
+     */
+	public static List<String> ReadFileByLine(String filePath,String charSet){
+        List<String> list = new ArrayList<String>();
+        try {
+            File file = new File(filePath);
+            if(null==charSet) {
+            	charSet = "UTF-8";
+            }
+            InputStreamReader isr = new InputStreamReader(new FileInputStream(file), charSet);
+        	BufferedReader br = new BufferedReader(isr);
+            String s = null;
+            while((s = br.readLine())!=null){
+                if(s.trim()!=""){
+                    list.add(s);
+                }
+            }
+            br.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
     /**
      * 读取文件按行读取去除两边空格之后,将每行加入到集合list当中
      * 目前支持txt文档
      * @param filePath 文件路径
      * @return 文件集合
      */
+	@Deprecated
     public static List<String> ReadFileByLine(String filePath){
         List<String> list = new ArrayList<String>();
         try {
@@ -141,7 +172,6 @@ public class PBFileUtil {
                 }else{
                     writer.write(content);
                 }
-                
             }
             writer.close();
         } catch (IOException e) {
@@ -581,4 +611,19 @@ public class PBFileUtil {
         }         
     }
     
+    public static void InputstreamToFile(InputStream ins,File file){
+    	try {
+    		OutputStream os = new FileOutputStream(file);
+        	int bytesRead = 0;
+        	byte[] buffer = new byte[8192];
+        	while ((bytesRead = ins.read(buffer, 0, 8192)) != -1) {
+        	os.write(buffer, 0, bytesRead);
+        	}
+        	os.close();
+        	ins.close();
+    	}catch(Exception e) {
+    		e.printStackTrace();
+    	}
+    }
+    	
 }
