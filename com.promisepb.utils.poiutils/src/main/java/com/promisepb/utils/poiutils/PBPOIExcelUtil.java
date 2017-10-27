@@ -1,18 +1,25 @@
 package com.promisepb.utils.poiutils;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.hssf.usermodel.HSSFRow;
@@ -26,7 +33,11 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.NumberToTextConverter;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import com.promisepb.utils.dbutils.PBDBType;
+import com.promisepb.utils.dbutils.PBDBUtil;
 import com.promisepb.utils.stringutils.PBStringUtil;
 
 /**  
@@ -38,6 +49,9 @@ import com.promisepb.utils.stringutils.PBStringUtil;
 @SuppressWarnings("all")
 public class PBPOIExcelUtil {
     
+	private static final Logger logger = LoggerFactory.getLogger(PBPOIExcelUtil.class);
+	public static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); 
+	
     /**
      * 读取excel文件,将每行数据按照分隔符拼接成字符组存放到集合当中
      * 目前支持2003版本
@@ -196,10 +210,13 @@ public class PBPOIExcelUtil {
             Statement statement = connect.createStatement();
             ResultSet resultSet = statement.executeQuery(sql);
             ResultSetMetaData rsmd = resultSet.getMetaData();
+            Map<Integer,Integer> mapColumnType= new HashMap<Integer,Integer>();
             int nColumn = rsmd.getColumnCount();
             String[] columnStrArr = new String[nColumn];
             for(int i=0;i<columnStrArr.length;i++){
                 columnStrArr[i] = rsmd.getColumnLabel(i+1);
+                int type = rsmd.getColumnType(i+1);
+                mapColumnType.put(i+1, type);
             }
             int index=0;
             int sheetIndex=0;
@@ -230,7 +247,11 @@ public class PBPOIExcelUtil {
                     if(null==resultSet.getObject(j)){
                         cell.setCellValue("");
                     }else{
-                        cell.setCellValue(resultSet.getObject(j).toString());
+                    	if(mapColumnType.get(j)==91) {
+                    		cell.setCellValue(sdf.format(resultSet.getTimestamp(j)));
+                    	}else {
+                    		cell.setCellValue(resultSet.getObject(j).toString());
+                    	}
                     }
                 }
                 pageIndex++;
@@ -257,7 +278,7 @@ public class PBPOIExcelUtil {
      * @param connection 数据库连接
      * @param createTableSQL 创建表语句
      * @param prepaSQL 执行插入sql语句
-     * @param batchMaxValue 每天提交最大数量
+     * @param batchMaxValue 每次提交最大数量
      * @param charSet 读取csv文件的编码
      * @param rowSNum 从第几行开始
      * @param rowENum 到第几行结束
@@ -267,10 +288,188 @@ public class PBPOIExcelUtil {
      */
     public static boolean ImportCSVToDataBase(String csvPath,Connection connection,String createTableSQL,String prepaSQL,int batchMaxValue,String charSet,int rowSNum,int rowENum,int columnSNum,int columnENum){
         boolean result = false;
-        
         //connection.createStatement().execute(createTableSQL);
         return result;
     }
+    
+    /**
+     * 导出数据到csv,目前支持oracle数据量大的导出
+     * @param sql sql语句 如果采用分页方式必须起别名t,并且返回字段也要加t 如select t.adcd_name,t.busline_name from ADCD_BUSLINE_REF t
+     * @param sql 如果不采用分页方式，标准sql语句就可以
+     * @param connect 数据库连接
+     * @param csvPath 导出csv路径 一定完整路径带.csv
+     * @param patchSize 大于0 采用分页方式
+     * @return
+     */
+    public static String ExportCSVBySQL(String sql,Connection connect,String csvPath, int patchSize){
+    	String result = "success";
+    	try {
+    		PBDBType dbType =  PBDBUtil.GetDataBaseTypeConnection(connect);
+    		boolean head = true;
+			File csvFile = null;
+            BufferedWriter csvWtriter = null;
+            boolean fileCreate = true;
+            //创建csv文件
+            if(fileCreate){
+                csvFile = new File(csvPath);
+                csvWtriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(csvFile), "UTF-8"), 10240);
+                File parent = csvFile.getParentFile();
+                if (parent != null && !parent.exists()) {
+                    parent.mkdirs();
+                }
+                csvFile.createNewFile();
+                fileCreate = false;
+                logger.info(csvPath);
+			}
+            Statement statement = connect.createStatement();
+    		if(patchSize>0) {//采用分页策略来
+    			int rowStart = 0;
+    			int rowEnd = patchSize;
+    			int step = patchSize;
+    			int index = 0;
+    			if(dbType==PBDBType.Oracle ) {
+        			sql = sql.toUpperCase().replaceFirst("SELECT", "SELECT * FROM (SELECT ROWNUM AS INDEXID,");
+        			if(sql.indexOf("WHERE")!=-1) {
+        				sql = sql+" AND ROWNUM <= #ROWEND) TABLE_ALIAS WHERE TABLE_ALIAS.INDEXID > #ROWSTART";
+        			}else {
+        				sql = sql+" WHERE ROWNUM <= #ROWEND) TABLE_ALIAS WHERE TABLE_ALIAS.INDEXID > #ROWSTART";
+        			}
+        		}
+    			boolean isOver = true;
+    			while(isOver){
+    				String sqlcurrent = sql.replace("#ROWSTART", rowStart+"").replace("#ROWEND", rowEnd+"");
+    				logger.info(sqlcurrent);
+    				ResultSet resultSet = statement.executeQuery(sqlcurrent);
+    				index = HandleResultToCSV(resultSet,csvWtriter,head);
+					head = false;
+                    csvWtriter.flush();
+                    resultSet.close();
+                    if(index>=step){
+                    	index=0;
+                    	rowStart = rowStart+step;
+            			rowEnd = rowEnd+step;
+                    }else{
+                    	isOver = false;
+                    	statement.close();
+                    	csvWtriter.close();
+                    }
+    			}
+    		}else {
+    			ResultSet resultSet = statement.executeQuery(sql);
+    			HandleResultToCSV(resultSet,csvWtriter,head);
+				head = false;
+                csvWtriter.flush();
+                resultSet.close();
+                statement.close();
+    		}
+		} catch (Exception e) {
+			e.printStackTrace();
+			result = "fail";
+		}
+    	return result;
+    }
+    
+    /**
+     * 处理ResultSet 写入到csv文件中
+     * @param resultSet
+     * @param csvWtriter
+     * @param writeColumnTitle
+     * @return
+     * @throws Exception
+     */
+    public static Integer HandleResultToCSV(ResultSet resultSet,BufferedWriter csvWtriter,boolean writeColumnTitle) throws Exception  {
+    	int index = 0;
+    	String[] columnStrArr = null;
+        Map<Integer,Integer> mapColumn= new HashMap<Integer,Integer>();
+        int nColumn = 0;
+        ResultSetMetaData rsmd = resultSet.getMetaData();
+        nColumn = rsmd.getColumnCount();
+        columnStrArr = new String[nColumn];
+        for(int i=0;i<columnStrArr.length;i++){
+            columnStrArr[i] = rsmd.getColumnLabel(i+1);
+            int type = rsmd.getColumnType(i+1);
+            mapColumn.put(i+1, type);
+        }
+    	if(writeColumnTitle){
+            // 写入文件头部
+            List<String> headList = new ArrayList<String>();
+            headList.add(0, ArrayToCSVStr(columnStrArr));
+            WriteRow(headList, csvWtriter);
+		}
+		List<String> rowList = new ArrayList<String>();
+        while(resultSet.next()){
+        	index++;
+        	 String[] arrayTemp = new String[nColumn];
+        	 for(int j=1;j<=nColumn;j++){
+        		 String ss = "";
+        		 if(mapColumn.get(j)==91){
+        			 ss = sdf.format(resultSet.getTimestamp(j));
+        		 }else{
+        			 ss = (null==resultSet.getObject(j)?"":resultSet.getObject(j).toString());
+        		 }
+        		 arrayTemp[j-1] = ss;
+             }
+        	 rowList.add(ArrayToCSVStr(arrayTemp));
+		}
+        WriteRow(rowList,csvWtriter);
+        return index;
+    }
+    
+    
+    /**
+     * 数组转换成字符串csv格式
+     * @param array
+     * @return
+     */
+    public static String ArrayToCSVStr(String[] array){
+		String retStr = "";
+		if(null!=array&&array.length>0){
+			for(int i=0;i<array.length;i++){
+				String strTemp = CSVHandlerStr(array[i]);
+				if(i==array.length-1){
+					retStr = retStr+strTemp;
+				}else{
+					retStr = retStr+strTemp+",";
+				}
+				
+			}
+		}
+		return retStr;
+	}
+    
+    /**
+     * 写一行数据方法
+     * @param row
+     * @param csvWriter
+     * @throws IOException
+     */
+    private static void WriteRow(List<String> row, BufferedWriter csvWriter) throws IOException {
+        // 写入文件头部
+        for (String data : row) {
+            csvWriter.write(data);
+            csvWriter.newLine();
+        }
+    }
+    
+    /**
+     * csv格式如果有逗号，整体用双引号括起来；如果里面还有双引号就替换成两个双引号
+     * @param str
+     * @return
+     */
+    private static String CSVHandlerStr(String str) {  
+        String tempDescription=str;  
+        //如果有逗号  
+        if(str.contains(",")){                
+            //如果还有双引号，先将双引号转义，避免两边加了双引号后转义错误  
+            if(str.contains("\"")){  
+                tempDescription=str.replace("\"", "\"\"");  
+            }  
+            //在将逗号转义  
+            tempDescription="\""+tempDescription+"\"";  
+        }  
+        return tempDescription;  
+    }  
+    
     
     /**
      * 读取Cell内容
