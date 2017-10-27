@@ -147,4 +147,38 @@ public class PBDBConnection {
         }
          return "success";
      }
+     
+     /**
+      * DM数据库连接对象
+      * @param url jdbc:dm://10.212.138.110:5236
+      * @param username postgis
+      * @param passwd postgis
+      * @return 数据库连接对象
+      */
+     public static Connection GetDMConnection(String url,String username,String passwd){
+         try {
+            Class.forName("dm.jdbc.driver.DmDriver");
+            return DriverManager.getConnection(url, username,passwd);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        } 
+    }
+     
+     /**
+      * DM数据库连接对象
+      * @param url jdbc:dm://10.212.138.110:5236
+      * @param username ttyj_tocc
+      * @param passwd admin123ttyj7890uiop
+      * @return 数据库连接对象
+      */
+     public static Connection GetDMConnection(String url,Properties prpos){
+          try {
+             Class.forName("dm.jdbc.driver.DmDriver");
+             return DriverManager.getConnection(url, prpos);
+         } catch (Exception e) {
+             e.printStackTrace();
+             return null;
+         } 
+     }
 }

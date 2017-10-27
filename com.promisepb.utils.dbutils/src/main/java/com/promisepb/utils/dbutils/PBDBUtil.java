@@ -134,7 +134,14 @@ public class PBDBUtil {
             String pkString = pkRS.getString("COLUMN_NAME");
             idMap.put(pkString, "1");
         }
-        ResultSet colRet = dbMeta.getColumns(connection.getCatalog(),"%", tName,"%"); 
+        ResultSet colRet = null;
+        if(GetDataBaseTypeConnection(connection)==PBDBType.DM) {
+        	String userName = connection.getMetaData().getUserName().toUpperCase();
+        	colRet = dbMeta.getColumns(connection.getCatalog(),userName, tName,"%"); 
+        }else {
+        	colRet = dbMeta.getColumns(connection.getCatalog(),"%", tName,"%"); 
+        }
+         
         while(colRet.next()) { 
             String columnName = colRet.getString("COLUMN_NAME");
             String columnType = colRet.getString("TYPE_NAME");
@@ -178,7 +185,7 @@ public class PBDBUtil {
         try{
             DatabaseMetaData dmd = connection.getMetaData();
             String[] types   =   {"TABLE"};
-            PBDBType dbType = PBDBUtil.GetDataBaseType(connection);
+            PBDBType dbType = PBDBUtil.GetDataBaseTypeConnection(connection);
             ResultSet rs = null;
             if(dbType.equals(PBDBType.PostgreSQL)){
                 rs = dmd.getTables(connection.getCatalog(), "", null, types);
@@ -225,17 +232,41 @@ public class PBDBUtil {
      * @return
      * @throws SQLException
      */
-    public static PBDBType GetDataBaseType(Connection connection) throws SQLException {  
+    public static PBDBType GetDataBaseTypeConnection(Connection connection) throws SQLException {  
         //通过driverName是否包含关键字判断  
         if (connection.getMetaData().getDriverName().toUpperCase().indexOf("MYSQL") != -1) {  
             return PBDBType.MySQL;  
         }else if (connection.getMetaData().getDriverName().toUpperCase().indexOf("SQL SERVER") != -1) {  
-            //sqljdbc与sqljdbc4不同，sqlserver中间有空格  
+            //sqljdbc与sqljdbc4不同，sqlserver中间有空格
             return PBDBType.SQLServer;  
         }else if(connection.getMetaData().getDriverName().toUpperCase().indexOf("POSTGRESQL") != -1){
             return PBDBType.PostgreSQL;
         }else if(connection.getMetaData().getDriverName().toUpperCase().indexOf("ORACLE") != -1){
             return PBDBType.Oracle;
+        }else if(connection.getMetaData().getDriverName().toUpperCase().indexOf("DM") != -1){
+            return PBDBType.DM;
+        }
+        return null;  
+    }
+    
+    /**
+     * 通过driverName是否包含关键字判断  数据库类型
+     * @return
+     * @throws SQLException
+     */
+    public static PBDBType GetDataBaseTypeByJDBCURL(String jdbcURL){  
+        //通过driverName是否包含关键字判断  
+        if (jdbcURL.toUpperCase().indexOf("MYSQL") != -1) {  
+            return PBDBType.MySQL;  
+        }else if (jdbcURL.toUpperCase().indexOf("SQL SERVER") != -1) {  
+            //sqljdbc与sqljdbc4不同，sqlserver中间有空格  
+            return PBDBType.SQLServer;  
+        }else if(jdbcURL.toUpperCase().indexOf("POSTGRESQL") != -1){
+            return PBDBType.PostgreSQL;
+        }else if(jdbcURL.toUpperCase().indexOf("ORACLE") != -1){
+            return PBDBType.Oracle;
+        }else if(jdbcURL.toUpperCase().indexOf("DM") != -1) {
+        	return PBDBType.DM;
         }
         return null;  
     }

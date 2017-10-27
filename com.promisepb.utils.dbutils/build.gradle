@@ -3,6 +3,7 @@ apply plugin: 'eclipse'
 version=0.1
 
 repositories {
+	mavenLocal()
     jcenter()
 }
 
@@ -16,6 +17,7 @@ ext{
 }
 
 dependencies {
+	compile "dm:dm7-jdbcDriver:1.6"
 	compile "log4j:log4j:$log4jVersion"
     compile "org.slf4j:slf4j-api:$slf4jVersion"
 	testCompile "mysql:mysql-connector-java:$mysqlConnectorVersion"

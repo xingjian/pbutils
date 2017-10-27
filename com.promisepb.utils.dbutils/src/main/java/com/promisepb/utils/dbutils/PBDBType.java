@@ -7,5 +7,5 @@ package com.promisepb.utils.dbutils;
  * 日期:2015年9月1日 下午9:54:24  
  */
 public enum PBDBType {
-    PostgreSQL,Oracle,MySQL,SQLServer
+    PostgreSQL,Oracle,MySQL,SQLServer,DM
 }
