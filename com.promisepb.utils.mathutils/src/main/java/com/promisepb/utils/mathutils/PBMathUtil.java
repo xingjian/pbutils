@@ -80,6 +80,23 @@ public class PBMathUtil {
     }
     
     /**
+     * @param x 判断点x坐标
+     * @param y 判断点y坐标
+     * @param x0
+     * @param y0
+     * @param x1
+     * @param y1
+     * @return
+     */
+    public static double[] GetBetweenLinePoints(double x,double y,double x0,double y0,double x1,double y1){
+        double[] p = GetVerticalPoint(x,y,x0,y0,x1,y1);
+        if ( ((p[0]>=x0 && p[0]<=x1) && (p[1]>=y0) && (p[1]<=y1)) || ((p[0]<=x0 && p[0]>=x1) && (p[1]<=y0) && (p[1]>=y1)) || ((p[0]>=x1 && p[0]<=x0) && (p[1]>=y0 && p[1]<=y1)) || ((p[0]>=x0 && p[0]<=x1) && (p[1]>=y1 && p[1]<=y0))) {
+            return p;
+        }
+        return null;
+    }
+    
+    /**
      * 线段打断
      * 线段AB,输入距离在线段内插入一个点C,并将线段分成两部分
      * 求内差点C的坐标 
@@ -231,6 +248,38 @@ public class PBMathUtil {
             retStr = retStr+"0";
         }
         return retStr;
+    }
+    
+    /**
+     * 求矢量与正北的角度
+     * 角度 = 弧度*180/Math.PI;
+     * 弧度 = 角度*Math.PI/180;
+     * @param x1 a <code>double</code> value
+     * @param y1 a <code>double</code> value
+     * @param x2 a <code>double</code> value
+     * @param y2 a <code>double</code> value
+     * @return a <code>int</code> value
+    */
+    public static double getVectorAngle(double x1,double y1,double x2,double y2){
+        double a = x2-x1;
+        double b = y2-y1;
+        //第一象限
+        if (x2>x1 && y2>y1) {
+            return (Math.atan(a/b)*180/Math.PI);
+        }else if (x2>x1 && y1>y2) {
+            return (Math.atan(a/b)*180/Math.PI)+180;
+        }else if (x1>x2 && y1>y2) {
+            return (Math.atan(a/b)*180/Math.PI)+180;
+        }else if (x1>x2 && y2>y1) {
+            return (Math.atan(a/b)*180/Math.PI)+360;
+        }else if(x1==x2&&y2<y1) {
+        	return 180;
+        }else if(y1==y2&&x2>x1) {
+        	return 90;
+        }else if(y1==y2&&x2<x1) {
+        	return 270;
+        }
+        return 0;
     }
     
 }

@@ -3,6 +3,7 @@ apply plugin: 'eclipse'
 version=0.1
 
 repositories {
+	mavenLocal()
     jcenter()
 }
 
@@ -16,6 +17,8 @@ dependencies {
 	compile "log4j:log4j:$log4jVersion"
     compile "org.slf4j:slf4j-api:$slf4jVersion"
     testCompile "junit:junit:$junitVersion"
+    testCompile "ch.qos.logback:logback-classic:1.1.2"
+	testCompile "ch.qos.logback:logback-core:1.1.2"
 }
 
 [compileJava, compileTestJava, javadoc]*.options*.encoding = "UTF-8"
@@ -25,4 +28,15 @@ task createJavaProject  {
 		sourceSets*.java.srcDirs*.each{ it.mkdirs() }
 		sourceSets*.resources.srcDirs*.each{ it.mkdirs()}
 	}
+}
+
+//上传jar到本地maven库
+apply plugin: 'maven'
+group = 'com.promisepb.utils'
+uploadArchives {
+ repositories {
+     mavenDeployer {
+         repository(url: uri('F:\\mavenrepo\\repository'))
+     }
+ }
 }
