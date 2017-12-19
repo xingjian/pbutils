@@ -34,13 +34,23 @@ public class PBGeoShapeUtilTest {
 	 */
 	@Test
 	public void testShapeToPostGISLPF() {
-		String shapePath = "G:\\项目文档\\公交都市\\工大\\林鹏飞\\北京导航图\\北京导航图\\乡镇村道_polyline.shp";
+		String shapePath = "F:\\toccworkspace\\lpfgps-sh\\sh_shp\\乡镇村道.shp";
 		DataStore dataStor = PBGISDBUtil.GetDataStoreFromPostGIS("localhost", "5433", "opengis", "postgres", "000000","public");
 		String charSet = "GBK";
-		String tableName = "lpf_bj_xzcd";
+		String tableName = "lpf_sh_xzcd";
 		Class classzs = MultiLineString.class;
 		String crs = "EPSG:4326";
 		String result = PBGeoShapeUtil.ShapeToPostGIS(shapePath, dataStor, charSet, tableName, classzs, crs);
 		System.out.println(result);
+	}
+	
+	@Test
+	public void testCreatePointShapeByTxt() {
+		String crs = "EPSG:4326";
+		String txtpath = "F:\\toccworkspace\\didigps\\result\\B_G_2016_08_01_da.csv";
+		String encoding = "GBK";
+		String topath = "F:\\toccworkspace\\lpfgps\\gps_03_xj.shp";
+		String[] attriDesc = new String[]{"fid:int","id:String","beijingTime:String","x:double","y:double","speed:double","directionAngle:double"};
+		PBGeoShapeUtil.CreatePointShapeByTxt(txtpath, ",", crs, encoding, attriDesc, topath);
 	}
 }

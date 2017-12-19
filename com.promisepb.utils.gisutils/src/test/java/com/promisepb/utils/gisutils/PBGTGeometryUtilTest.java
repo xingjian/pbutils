@@ -23,5 +23,7 @@ public class PBGTGeometryUtilTest {
 		double y2 = 40.124776;
 		double dis = PBGTGeometryUtil.GetDistance84(x1, y1, x2, y2);
 		System.out.println(dis);
+		double disLPF = PBGTGeometryUtil.GetDistance84(116.3547266940,39.975205656088,116.355495569824,39.9752124119753);
+		System.out.println(disLPF);
 	}
 }

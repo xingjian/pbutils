@@ -7,6 +7,9 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -29,6 +32,7 @@ import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.data.wfs.WFSDataStoreFactory;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
+import org.geotools.feature.type.GeometryTypeImpl;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.CRS;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
@@ -38,6 +42,7 @@ import org.opengis.feature.type.AttributeType;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
 
+import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.MultiLineString;
@@ -316,7 +321,8 @@ public class PBGISDBUtil {
     }
     
     /**
-     * 获取指定空间数据范围080903 080103o8o1o4
+     * 获取指定空间数据范围 会有一定的误差，但是比较快
+     * 这个调用的是select ST_AsText(ST_force_2d(ST_Envelope(ST_EstimatedExtent('表名','几何字段名'))))
      * @param dataStore
      * @param tableName
      * @return ReferencedEnvelope对象
@@ -326,8 +332,7 @@ public class PBGISDBUtil {
         ReferencedEnvelope bounds = null;
         try {
             SimpleFeatureSource fs = dataStore.getFeatureSource(tableName);
-            SimpleFeatureCollection fc = fs.getFeatures();
-            bounds =  fc.getBounds();
+            bounds =  fs.getBounds();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -335,10 +340,89 @@ public class PBGISDBUtil {
     }
     
     /**
-     * 获取指定空间表的属性信息
+     * 返回postgis空间表的范围
+     * double顺序存放 minx miny  maxx maxy
+     * @param host
+     * @param port
+     * @param database
+     * @param userName
+     * @param password
+     * @param schema
+     * @param tableName
+     * @return
+     */
+    public static double[] GetPostGISFeaturesRange(String host, String port, String database, String userName, String password, String schema,String tableName) {
+    	double[] result = new double[4];
+    	DataStore ds = PBGISDBUtil.GetDataStoreFromPostGIS(host, port, database, userName, password, schema);
+		ReferencedEnvelope re = GetBoundsByTableName(ds,tableName);
+		result[0] = re.getMinX();
+		result[1] = re.getMinY();
+		result[2] = re.getMaxX();
+		result[3] = re.getMaxY();
+		ds.dispose();
+    	return result;
+    }
+    
+    
+   /**
+    * 返回postgis空间表的范围
+    * @param connection
+    * @param tableName
+    * @param geoColumnName
+    * @return
+    * @throws Exception
+    */
+    public static double[] GetPostGISTableBounds(Connection connection,String tableName,String geoColumnName) throws Exception {
+    	double[] result = new double[4];
+    	String sql = "select st_astext(ST_Envelope(st_collect("+geoColumnName+"))) from "+tableName;
+    	Statement statement = connection.createStatement();
+    	ResultSet rs = statement.executeQuery(sql);
+    	rs.next();
+    	Polygon polygon = PBGTGeometryUtil.createPolygonByWKT(rs.getString(1));
+    	Envelope envelope = polygon.getEnvelopeInternal();
+    	result[0] = envelope.getMinX();
+		result[1] = envelope.getMinY();
+		result[2] = envelope.getMaxX();
+		result[3] = envelope.getMaxY();
+    	rs.close();
+    	statement.close();
+    	return result;
+    }
+    
+    
+    /**
+     *  获取空间表的空间字段信息
      * @param dataStore
      * @param tableName
      * @return
+     */
+    public static List<String> GetGeometryNameByTableName(DataStore dataStore,String tableName){
+        List<String> retList = new ArrayList<String>();
+        try {
+            SimpleFeatureSource fs = dataStore.getFeatureSource(tableName);
+            SimpleFeatureType ft=fs.getSchema();
+            for (int i = 0; i < ft.getAttributeCount(); i++) {
+                AttributeType at = ft.getType(i);
+                if(at instanceof GeometryTypeImpl) {
+                	//String name = at.getBinding().getName();com.vividsolutions.jts.geom.MultiLineString
+                	//String simpleName = at.getBinding().getSimpleName();MultiLineString
+                	retList.add(at.getName().toString());
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }finally{
+            dataStore.dispose();
+        }
+        return retList;
+    }
+    
+    
+    /**
+     * 获取指定空间表的属性信息
+     * @param dataStore
+     * @param tableName
+     * @return 
      */
     public static List<String> GetAttributeByTableName(DataStore dataStore,String tableName){
         List<String> retList = new ArrayList<String>();

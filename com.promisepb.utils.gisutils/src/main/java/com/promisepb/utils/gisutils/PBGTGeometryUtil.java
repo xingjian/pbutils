@@ -22,6 +22,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.opengis.feature.simple.SimpleFeature;
 
+import com.promisepb.utils.gisdata.MapGrid;
 import com.vividsolutions.jts.algorithm.Angle;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.CoordinateSequence;
@@ -1008,12 +1009,44 @@ public class PBGTGeometryUtil {
 	}
 	
 	/**
+	 * 获取geom的范围 xmin ymin xmax ymax
+	 * @param geom
+	 * @return
+	 */
+	public static double[] GetGeometryBounds(Geometry geom) {
+		double[] result = new double[4];
+		Coordinate[] coorArray = geom.getCoordinates();
+		result[0] = coorArray[0].x;
+		result[1] = coorArray[0].y;
+		result[2] = coorArray[0].x;
+		result[3] = coorArray[0].y;
+		for(int i=1;i<coorArray.length;i++) {
+			Coordinate coorTemp = coorArray[i];
+			if(result[0]>coorTemp.x) {
+				result[0] = coorTemp.x;
+			}
+			if(result[2]<coorTemp.x) {
+				result[2] = coorTemp.x;
+			}
+			if(result[1]>coorTemp.y) {
+				result[1] = coorTemp.y;
+			}
+			if(result[3]<coorTemp.y) {
+				result[3] = coorTemp.y;
+			}
+		}
+		return result;
+	}
+	
+	
+	
+	/**
 	 * 分割线
 	 * @param line
 	 * @param coordinate
 	 * @return
 	 */
-	public static List<LineString> splitLineString(final LineString line, final Coordinate coordinate) {
+	public static List<LineString> SplitLineString(final LineString line, final Coordinate coordinate) {
 		int[] indexes = findClosestSegmentAndCoordinate(line, coordinate);
 		int segmentIndex = indexes[0];
 		if (segmentIndex != -1) {
@@ -1075,8 +1108,8 @@ public class PBGTGeometryUtil {
 	/**
 	 * findClosestSegmentAndCoordinate
 	 * @param line
-	 * @param coordinate
-	 * @return
+	 * @param coordinate -1代表没有匹配上
+	 * @return index 2 0 代表是中间，1代表是节点 
 	 */
 	public static int[] findClosestSegmentAndCoordinate(final LineString line, final Coordinate coordinate) {
 		int[] closest = new int[] { -1, -1, 0 };
@@ -1204,4 +1237,94 @@ public class PBGTGeometryUtil {
 			coordinates.setOrdinate(i, 2, coordinate.z);
 		}
 	}
+	
+	/**
+	 * 根据范围创建网格数据
+	 * @param xmin
+	 * @param ymin
+	 * @param xmax
+	 * @param ymax
+	 * @param radius
+	 * @return
+	 */
+	public static List<Polygon> CreateSquareByExtents(double xmin,double ymin,double xmax,double ymax,double radius){
+        int index = 0;
+        List<Polygon> retList = new ArrayList<Polygon>();
+        double xTemp = 0;
+        double yTemp = 0;
+        int yInt = (int)((ymax-ymin)/(radius))+1;
+        int xInt = (int)((xmax-xmin)/(radius))+1;
+        for(int i=0;i<xInt;i++){
+            xTemp = xmin + (i)*radius;
+            for(int j=0;j<yInt;j++){
+                yTemp = ymax - (j)*radius;
+                Polygon polygon = createSquare(xTemp,yTemp-radius,xTemp+radius,yTemp);
+                retList.add(index, polygon);
+                index++;
+            }
+        }
+        return retList;
+    }
+	
+	/**
+	 * 根据范围创建网格数据 以字符串方式返回 indexX:indexY:wkt
+	 * @param xmin
+	 * @param ymin
+	 * @param xmax
+	 * @param ymax
+	 * @param radius
+	 * @return
+	 */
+	public static List<String> GetStringSquareByExtents(double xmin,double ymin,double xmax,double ymax,double radius){
+        int index = 0;
+        List<String> retList = new ArrayList<String>();
+        double xTemp = 0;
+        double yTemp = 0;
+        int yInt = (int)((ymax-ymin)/(radius))+1;
+        int xInt = (int)((xmax-xmin)/(radius))+1;
+        for(int i=0;i<xInt;i++){
+            xTemp = xmin + (i)*radius;
+            for(int j=0;j<yInt;j++){
+                yTemp = ymax - (j)*radius;
+                Polygon polygon = createSquare(xTemp,yTemp-radius,xTemp+radius,yTemp);
+                retList.add(index, i+":"+j+":"+polygon.toText());
+                index++;
+            }
+        }
+        return retList;
+    }
+	
+	/**
+	 * 根据范围创建网格数据 以字符串方式返回 indexX:indexY:wkt
+	 * @param xmin
+	 * @param ymin
+	 * @param xmax
+	 * @param ymax
+	 * @param radius
+	 * @return
+	 */
+	public static List<MapGrid> GetGridSquareByExtents(double xmin,double ymin,double xmax,double ymax,double radius){
+        int index = 0;
+        List<MapGrid> retList = new ArrayList<MapGrid>();
+        double xTemp = 0;
+        double yTemp = 0;
+        int yInt = (int)((ymax-ymin)/(radius))+1;
+        int xInt = (int)((xmax-xmin)/(radius))+1;
+        for(int i=0;i<xInt;i++){
+            xTemp = xmin + (i)*radius;
+            for(int j=0;j<yInt;j++){
+                yTemp = ymax - (j)*radius;
+                Polygon polygon = createSquare(xTemp,yTemp-radius,xTemp+radius,yTemp);
+                MapGrid mg = new MapGrid();
+                mg.setIndex(index+"");
+                mg.polygon=polygon;
+                mg.setX(i);
+                mg.setY(j);
+                mg.setWkt(polygon.toText());
+                retList.add(index, mg);
+                index++;
+            }
+        }
+        return retList;
+    }
 }

@@ -45,6 +45,7 @@ import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.filter.text.cql2.CQL;
 import org.geotools.filter.text.cql2.CQLException;
 import org.geotools.filter.v1_1.OGCConfiguration;
+import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.CRS;
 import org.geotools.xml.Configuration;
 import org.geotools.xml.Parser;
@@ -298,7 +299,7 @@ public class PBGeoShapeUtil {
             if(geometryType.equals("6")){tb.add("the_geom", MultiPolygon.class);}
             ds.createSchema(tb.buildFeatureType());  
             ds.setCharset(Charset.forName(encoding));
-            List<String> listTxtLine = PBFileUtil.ReadFileByLine(txtpath);
+            List<String> listTxtLine = PBFileUtil.ReadFileByLine(txtpath,encoding);
             //设置Writer  
             FeatureWriter<SimpleFeatureType, SimpleFeature> writer = ds.getFeatureWriter(ds.getTypeNames()[0], Transaction.AUTO_COMMIT);
             for(String str:listTxtLine){
@@ -331,6 +332,99 @@ public class PBGeoShapeUtil {
         }
         return ret;
     }
+    
+    /**
+     * 根据文本文件生成shape gps文件转换使用
+     * @param path txt 路径  'F:\\xy.txt'
+     * @param splitChar 文件每行分隔 除了点要素分隔符可以使用逗号，其它类型要更换分隔符号
+     * @param crs 坐标系
+     * @param encoding 文件编码
+     * @param attriDesc 属性描述 空间字段名称必须为the_geom 类型geometry-wkt geometry-json
+     * String[] attriDesc = new String[]{"gid:int","type:String","lockid:double","street:String","x:double","y:double"} x  y 固定
+     * @param topath  'F:\\export.shp'
+     * @return 结果状态
+     */
+    public static boolean CreatePointShapeByTxt(String txtpath,String splitChar,String crs,String encoding,String[] attriDesc,String topath){
+        boolean ret = false;
+        try {
+            //创建shape文件对象
+            File file = new File(topath);
+            Map<String, Serializable> params = new HashMap<String, Serializable>();  
+            params.put( ShapefileDataStoreFactory.URLP.key, file.toURI().toURL() );
+            params.put( ShapefileDataStoreFactory.CREATE_SPATIAL_INDEX.key, (Serializable)Boolean.TRUE );
+            ShapefileDataStore ds = (ShapefileDataStore) new ShapefileDataStoreFactory().createNewDataStore(params); 
+            //定义图形信息和属性信息  
+            SimpleFeatureTypeBuilder tb = new SimpleFeatureTypeBuilder(); 
+            CoordinateReferenceSystem sourceCRS = CRS.decode(crs);
+            tb.setName("shapefile");
+            tb.setCRS(sourceCRS);
+            Map<Integer,String> map = new HashMap<Integer,String>();
+            Map<String,String> mapTemp = new HashMap<String,String>();
+            for(int i=0;i<attriDesc.length;i++){
+                String[] arrTemp = attriDesc[i].split(":");
+                String columnLabel = arrTemp[0];
+                String columnType = arrTemp[1];
+                if(columnLabel.length()>10){
+                    if(i>9){
+                        columnLabel = columnLabel.substring(0, 8)+i;
+                    }else{
+                        columnLabel = columnLabel.substring(0, 9)+i;
+                    }
+                }
+                if(columnType.toLowerCase().equals("double")){
+                    tb.add(columnLabel, Double.class);
+                }else if(columnType.toLowerCase().equals("int")){
+                    tb.add(columnLabel, Integer.class);
+                }else if(columnType.toLowerCase().equals("float")){
+                    tb.add(columnLabel, Float.class);
+                }else{
+                    tb.add(columnLabel, String.class);
+                }
+                map.put(i, columnLabel);
+                mapTemp.put(columnLabel, columnType);
+            }
+            tb.add("the_geom", Point.class);
+            ds.createSchema(tb.buildFeatureType());  
+            ds.setCharset(Charset.forName(encoding));
+            List<String> listTxtLine = PBFileUtil.ReadFileByLine(txtpath,encoding);
+            //设置Writer  
+            FeatureWriter<SimpleFeatureType, SimpleFeature> writer = ds.getFeatureWriter(ds.getTypeNames()[0], Transaction.AUTO_COMMIT);
+            for(String str:listTxtLine){
+                String[] strArr = str.split(splitChar);
+                double x = 0.0;
+                double y = 0.0;
+                SimpleFeature feature = writer.next();
+                for(int i=0;i<strArr.length;i++){
+                	 String dataStr = strArr[i];
+                    String labelName = map.get(i);
+                    if(labelName.equals("x")) {
+                    	x = Double.parseDouble(dataStr);
+                    }else if(labelName.equals("y")) {
+                    	y = Double.parseDouble(dataStr);
+                    }
+                    String labelType = mapTemp.get(labelName);
+                   
+                    if(labelType.toLowerCase().equals("double")){
+                        feature.setAttribute(labelName,Double.parseDouble(dataStr));
+                    }else if(labelType.toLowerCase().equals("int")){
+                        feature.setAttribute(labelName,Integer.parseInt(dataStr));
+                    }else if(labelType.toLowerCase().equals("float")){
+                        feature.setAttribute(labelName,Float.parseFloat(dataStr));
+                    }else if(labelType.toLowerCase().equals("string")){
+                        feature.setAttribute(labelName,dataStr);
+                    }
+                }
+                feature.setAttribute("the_geom",PBGTGeometryUtil.createPoint(x, y));
+            }
+            writer.write();  
+            writer.close();  
+            ds.dispose();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return ret;
+    }
+    
     
     /**
      * 将空间对象导出到shape,并增加字段fid
@@ -735,4 +829,33 @@ public class PBGeoShapeUtil {
         }
         return result;
     } 
+    
+    /**
+     * 获取shape feature集合空间范围
+     * @param shapePath shape文件路径
+     * @param charSet 读取shape文件编码
+     * @return SimpleFeatureCollection
+     */
+    public static double[] GetShapeFileBounds(String shapePath,String charSet){
+    	double[] result = new double[4];
+        SimpleFeatureCollection sfc = null;
+        ShapefileDataStoreFactory dataStoreFactory = new ShapefileDataStoreFactory();
+        ShapefileDataStore sds = null;
+        try {
+            sds = (ShapefileDataStore)dataStoreFactory.createDataStore(new File(shapePath).toURI().toURL());
+            sds.setCharset(Charset.forName(charSet));
+            SimpleFeatureSource featureSource = sds.getFeatureSource();
+            ReferencedEnvelope re = featureSource.getBounds();
+            re = featureSource.getFeatures().getBounds();
+            result[0] = re.getMinX();
+    		result[1] = re.getMinY();
+    		result[2] = re.getMaxX();
+    		result[3] = re.getMaxY();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }finally{
+            sds.dispose();
+        }
+        return result;
+    }
 }
