@@ -19,6 +19,8 @@ ext{
 dependencies {
 	compile "log4j:log4j:$log4jVersion"
     compile "org.slf4j:slf4j-api:$slf4jVersion"
+    compile "com.promisepb.utils:com.promisepb.utils.gisutils:0.1"
+    compile "com.promisepb.utils:com.promisepb.utils.stringutils:0.1"
     testCompile "junit:junit:$junitVersion"
 }
 
