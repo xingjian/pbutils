@@ -1,10 +1,11 @@
 /**
 * @Copyright@2017 Beijing Tongtu Software Technology Co. Ltd.
 */
-package com.promisepb.utils.gpsmatch.data;
+package com.promisepb.utils.gpsmatch.vo;
 
 import com.promisepb.utils.gisdata.CarGPS;
 import com.promisepb.utils.gisdata.SWLink;
+import com.vividsolutions.jts.geom.Coordinate;
 
 /**  
  * 功能描述: 出租车gps和四维路链匹配结果
@@ -15,19 +16,21 @@ import com.promisepb.utils.gisdata.SWLink;
 public class CarGPSMatchSWLinkResult {
 
 	//匹配的路链
-	private SWLink swLink;
+	private LindNodeToployData swLink;
 	//原始的gps点
 	private CarGPS oldGPS;
 	//新的gps点
-	private CarGPS newGPS;
+	private Coordinate newGPS;
 	//车辆编号
 	private String carCode;
 	//gps时间
 	private String timeStr;
-	public SWLink getSwLink() {
+	private String status;
+	
+	public LindNodeToployData getSwLink() {
 		return swLink;
 	}
-	public void setSwLink(SWLink swLink) {
+	public void setSwLink(LindNodeToployData swLink) {
 		this.swLink = swLink;
 	}
 	public CarGPS getOldGPS() {
@@ -36,10 +39,11 @@ public class CarGPSMatchSWLinkResult {
 	public void setOldGPS(CarGPS oldGPS) {
 		this.oldGPS = oldGPS;
 	}
-	public CarGPS getNewGPS() {
+	
+	public Coordinate getNewGPS() {
 		return newGPS;
 	}
-	public void setNewGPS(CarGPS newGPS) {
+	public void setNewGPS(Coordinate newGPS) {
 		this.newGPS = newGPS;
 	}
 	public String getCarCode() {
@@ -53,6 +57,12 @@ public class CarGPSMatchSWLinkResult {
 	}
 	public void setTimeStr(String timeStr) {
 		this.timeStr = timeStr;
+	}
+	public String getStatus() {
+		return status;
+	}
+	public void setStatus(String status) {
+		this.status = status;
 	}
 	
 }
