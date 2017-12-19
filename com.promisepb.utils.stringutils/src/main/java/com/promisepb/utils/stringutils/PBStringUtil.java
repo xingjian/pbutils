@@ -26,6 +26,8 @@ public class PBStringUtil {
 
     public static String SITETYPE_LEFT = "append_left";
     public static String SITETYPE_RIGHT = "append_right";
+    public static SimpleDateFormat sdf_yMdHms = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    public static SimpleDateFormat sdf_yMd = new  SimpleDateFormat("yyyy-MM-dd" );
     /**
      * 汉字转换位汉语拼音首字母，英文字符不变
      * @param chinese 汉字
@@ -229,9 +231,8 @@ public class PBStringUtil {
      * @return 
      */
     public static String GetCurrentDateString(){
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         Date date = new Date();
-        return formatter.format(date);
+        return sdf_yMdHms.format(date);
     }
     
     
@@ -270,12 +271,11 @@ public class PBStringUtil {
     public  static  int  DayForWeek(String pTime){
     	int  dayForWeek = 0 ;   
     	try {
-    		 SimpleDateFormat format = new  SimpleDateFormat("yyyy-MM-dd" );
         	 Calendar c = Calendar.getInstance(); 
 			 if(null==pTime||pTime.trim().equals("")) {
 				 c.setTime(new Date());
 			 }else {
-				 c.setTime(format.parse(pTime));
+				 c.setTime(sdf_yMd.parse(pTime));
 			 }
 	    	 if (c.get(Calendar.DAY_OF_WEEK) == 1 ){  
 	    		 dayForWeek = 7 ;  
@@ -305,6 +305,76 @@ public class PBStringUtil {
         if (w < 0)
             w = 0;
         return weekDays[w];
+    }
+    
+    /**
+     * 比较两个日期大小
+     * @param date1 日期1
+     * @param date2 日期2
+     * @return 0 表示相等  1 (date1大于date2) -1(date1小于date2) -2表示异常
+     */
+    public static int CompareDate(String date1,String date2,SimpleDateFormat sdf) {
+        try {
+            Date dt1 = sdf.parse(date1);
+            Date dt2 = sdf.parse(date2);
+            if (dt1.getTime() > dt2.getTime()) {
+                return 1;
+            } else if (dt1.getTime() < dt2.getTime()) {
+                return -1;
+            } else {
+                return 0;
+            }
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
+        return -2;
+    }
+    
+    /**
+     * 比较两个日期大小
+     * @param date1 日期1
+     * @param date2 日期2
+     * @return 0 表示相等  1 (date1大于date2) -1(date1小于date2) -2表示异常
+     */
+    public static int CompareDate(String date1, String date2) {
+        try {
+            Date dt1 = sdf_yMdHms.parse(date1);
+            Date dt2 = sdf_yMdHms.parse(date2);
+            if (dt1.getTime() > dt2.getTime()) {
+                return 1;
+            } else if (dt1.getTime() < dt2.getTime()) {
+                return -1;
+            } else {
+                return 0;
+            }
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
+        return -2;
+    }
+    
+    
+    /**
+     * 判断日期是否在区间范围
+     * @param time
+     * @param from
+     * @param to
+     * @return
+     */
+    public static  boolean BelongCalendar(Date time, Date from, Date to) {
+        Calendar date = Calendar.getInstance();
+        date.setTime(time);
+        Calendar after = Calendar.getInstance();
+        after.setTime(from);
+
+        Calendar before = Calendar.getInstance();
+        before.setTime(to);
+
+        if (date.after(after) && date.before(before)) {
+            return true;
+        } else {
+            return false;
+        }
     }
     
 }
