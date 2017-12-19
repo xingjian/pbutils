@@ -28,7 +28,7 @@ public class PBPOIExcelUtilTest {
         String passwdPG = "postgis";
         Connection connectionPG = PBDBConnection.GetPostGresConnection(urlPG, usernamePG, passwdPG);
         String sql = "SELECT fid, \"Object_ID\", \"MapID\", \"ID\", \"Kind_num\", \"Kind\", \"Width\", \"Direction\", \"Toll\", \"Const_St\", \"UndConCRID\", \"SnodeID\", \"EnodeID\", \"FuncClass\", \"Length\", \"DetailCity\", \"Through\", \"UnThruCRID\", \"Ownership\", \"Road_Cond\", \"Special\", \"AdminCodeL\", \"AdminCodeR\", \"Uflag\", \"OnewayCRID\", \"AccessCRID\", \"SpeedClass\", \"LaneNumS2E\", \"LaneNumE2S\", \"LaneNum\", \"Vehcl_Type\", \"Elevated\", \"Structure\", \"UseFeeCRID\", \"UseFeeType\", \"SpdLmtS2E\", \"SpdLmtE2S\", \"SpdSrcS2E\", \"SpdSrcE2S\", \"DC_Type\", \"NoPassCRID\", \"Shape_Leng\"FROM navigation_2016;";
-        String result = PBPOIExcelUtil.ExportCSVBySQL(sql, connectionPG, "d:\\navigation_2016.csv", 0);
+        String result = PBPOIExcelUtil.ExportCSVBySQL(sql, connectionPG, "d:\\navigation_2016.csv", 0,null);
         logger.info(result);
 	}
 	
@@ -39,7 +39,7 @@ public class PBPOIExcelUtilTest {
         String passwd = "admin123ttyj7890uiop";
         Connection connection = PBDBConnection.GetOracleConnection(url, username, passwd);
         String sql = "select t.adcd_name,t.busline_name from ADCD_BUSLINE_REF t where adcd_name='海淀区'";
-        String result = PBPOIExcelUtil.ExportCSVBySQL(sql, connection, "d:\\ADCD_BUSLINE_REF.csv", 50);
+        String result = PBPOIExcelUtil.ExportCSVBySQL(sql, connection, "d:\\ADCD_BUSLINE_REF.csv", 50,null);
         logger.info(result);
 	}
 }

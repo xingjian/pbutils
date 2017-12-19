@@ -301,7 +301,7 @@ public class PBPOIExcelUtil {
      * @param patchSize 大于0 采用分页方式
      * @return
      */
-    public static String ExportCSVBySQL(String sql,Connection connect,String csvPath, int patchSize){
+    public static String ExportCSVBySQL(String sql,Connection connect,String csvPath, int patchSize,String charSet){
     	String result = "success";
     	try {
     		PBDBType dbType =  PBDBUtil.GetDataBaseTypeConnection(connect);
@@ -312,7 +312,10 @@ public class PBPOIExcelUtil {
             //创建csv文件
             if(fileCreate){
                 csvFile = new File(csvPath);
-                csvWtriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(csvFile), "UTF-8"), 10240);
+                if(null==charSet||charSet.trim().equals("")) {
+                	charSet = "UTF-8";
+                }
+                csvWtriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(csvFile), charSet), 10240);
                 File parent = csvFile.getParentFile();
                 if (parent != null && !parent.exists()) {
                     parent.mkdirs();
@@ -369,6 +372,8 @@ public class PBPOIExcelUtil {
     	return result;
     }
     
+    
+    
     /**
      * 处理ResultSet 写入到csv文件中
      * @param resultSet
@@ -402,7 +407,7 @@ public class PBPOIExcelUtil {
         	 String[] arrayTemp = new String[nColumn];
         	 for(int j=1;j<=nColumn;j++){
         		 String ss = "";
-        		 if(mapColumn.get(j)==91){
+        		 if(mapColumn.get(j)==91&&null!=resultSet.getTimestamp(j)){
         			 ss = sdf.format(resultSet.getTimestamp(j));
         		 }else{
         			 ss = (null==resultSet.getObject(j)?"":resultSet.getObject(j).toString());
@@ -443,10 +448,10 @@ public class PBPOIExcelUtil {
      * @param csvWriter
      * @throws IOException
      */
-    private static void WriteRow(List<String> row, BufferedWriter csvWriter) throws IOException {
+    public  static <T> void WriteRow(List<T> row, BufferedWriter csvWriter) throws IOException {
         // 写入文件头部
-        for (String data : row) {
-            csvWriter.write(data);
+        for (T data : row) {
+            csvWriter.write(data.toString());
             csvWriter.newLine();
         }
     }
