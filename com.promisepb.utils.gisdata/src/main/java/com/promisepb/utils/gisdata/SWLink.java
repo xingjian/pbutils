@@ -3,6 +3,8 @@
 */
 package com.promisepb.utils.gisdata;
 
+import com.vividsolutions.jts.geom.MultiLineString;
+
 /**  
  * 功能描述:四维link信息
  * @author:<a href="mailto:xingjian@tongtusoft.com.cn">邢健</a>  
@@ -22,14 +24,12 @@ public class SWLink {
 	private String direction;
 	//路链长度
 	private double length;
-	//空间数据点集合第一个点
-	private LinkPoint firstPoint;//起点
-	//空间数据点集合最后一个点
-	private LinkPoint lastPoint;//终点
 	//画线方向起点号码
 	private String snodeID;
 	//画线方向终点号码
 	private String enodeID;
+	//集合对象
+	private MultiLineString mLine;
 	public String getMapid() {
 		return mapid;
 	}
@@ -66,18 +66,6 @@ public class SWLink {
 	public void setLength(double length) {
 		this.length = length;
 	}
-	public LinkPoint getFirstPoint() {
-		return firstPoint;
-	}
-	public void setFirstPoint(LinkPoint firstPoint) {
-		this.firstPoint = firstPoint;
-	}
-	public LinkPoint getLastPoint() {
-		return lastPoint;
-	}
-	public void setLastPoint(LinkPoint lastPoint) {
-		this.lastPoint = lastPoint;
-	}
 	public String getSnodeID() {
 		return snodeID;
 	}
@@ -90,7 +78,10 @@ public class SWLink {
 	public void setEnodeID(String enodeID) {
 		this.enodeID = enodeID;
 	}
-	
-	
-	
+	public MultiLineString getmLine() {
+		return mLine;
+	}
+	public void setmLine(MultiLineString mLine) {
+		this.mLine = mLine;
+	}
 }

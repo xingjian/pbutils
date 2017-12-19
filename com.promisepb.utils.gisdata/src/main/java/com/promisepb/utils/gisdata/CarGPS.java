@@ -3,7 +3,7 @@
 */
 package com.promisepb.utils.gisdata;
 
-import java.util.Date;
+import com.promisepb.utils.stringutils.PBStringUtil;
 
 /**  
  * 功能描述: 出租汽车GPS数据
@@ -11,11 +11,11 @@ import java.util.Date;
  * @version: V1.0
  * 日期:2017年10月10日 下午3:44:10  
  */
-public class CarGPS {
+public class CarGPS implements Comparable<CarGPS>{
     //类型
 	private String type;
     //gps数据时间
-    private Date gpsTime;
+    private String gpsTime;
     //经度
     private double longitude;
     //纬度
@@ -35,10 +35,11 @@ public class CarGPS {
 	public void setType(String type) {
 		this.type = type;
 	}
-	public Date getGpsTime() {
+	
+	public String getGpsTime() {
 		return gpsTime;
 	}
-	public void setGpsTime(Date gpsTime) {
+	public void setGpsTime(String gpsTime) {
 		this.gpsTime = gpsTime;
 	}
 	public double getLongitude() {
@@ -76,6 +77,10 @@ public class CarGPS {
 	}
 	public void setAngle(double angle) {
 		this.angle = angle;
+	}
+	@Override
+	public int compareTo(CarGPS o) {
+		return PBStringUtil.CompareDate(this.gpsTime, o.getGpsTime());
 	} 
     
 }
