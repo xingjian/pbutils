@@ -87,7 +87,7 @@ public class PBGDUtil {
 	 * @return 查询结果
 	 * @throws Exception
 	 */
-//	public static List<String> GetBusLineNameByAdcdCode(String adcdCode,String keyword) throws Exception{
+	public static void GetBusLineNameByAdcdCode(String adcdCode,String keyword) {
 //        Map<String,String> map = new HashMap<String,String>();
 //        List<String> list = new ArrayList<String>();
 //        int index = 1;
@@ -96,54 +96,52 @@ public class PBGDUtil {
 //        }else {
 //        	
 //        }
-////        for(int a=1;a<1000;a++){
-////            String url = "http://api.go2map.com/engine/api/businfo/json?hidden_MapTool=busex2.BusInfo&what="+a+"&city=%25u5317%25u4EAC&pageindex=1&pagesize=100&fromuser=bjbus&datasource=bjbus&clientid=9db0f8fcb62eb46c&cb=SGS.modules_businfo15cf80ad8ab17";
-////            String result = PBCrawlerUtil.GetByString(url);
-////            JSONObject jb = JSONObject.fromObject(result.substring(result.indexOf("(")+1, result.lastIndexOf(")")));
-////            if(!jb.get("status").equals("ok")){continue;}
-////            if(null==jb){
-////                continue;
-////            }
-////            JSONObject json1 = JSONObject.fromObject(jb.get("response"));
-////            if(null==json1){
-////                continue;
-////            }
-////            JSONObject json2 = JSONObject.fromObject(json1.get("resultset"));
-////            if(null==json2){
-////                continue;
-////            }
-////            JSONObject json3 = JSONObject.fromObject(json2.get("data"));
-////            if(null==json3){
-////                continue;
-////            }
-////            if(null==json2.get("curresult")){
-////                continue;
-////            }else{
-////                String curresult = json2.get("curresult").toString();
-////                if(curresult.equals("1")){
-////                    JSONObject json4 = JSONObject.fromObject(json3.get("feature"));
-////                    String idTemp = json4.get("id")+"";
-////                    String captionTemp = json4.get("caption")+"";
-////                    if(null==map.get(idTemp)){
-////                        map.put(idTemp, captionTemp);
-////                        System.out.println(index+","+idTemp+","+captionTemp);
-////                        //list.add(index-1, index+","+idTemp+","+captionTemp);
-////                        index++;
-////                    }
-////                }else{
-////                    JSONArray json4 = json3.getJSONArray("feature");
-////                    for(int i=0;i<json4.size();i++){
-////                        JSONObject jsonTemp = JSONObject.fromObject(json4.get(i));
-////                        String idTemp = jsonTemp.get("id")+"";
-////                        String captionTemp = jsonTemp.get("caption")+"";
-////                        if(null==map.get(idTemp)){
-////                            map.put(idTemp, captionTemp);
-////                            index++;
-////                        }
-////                    } 
-////                }
-////            }
-////            Thread.sleep(500);
+//        for(int a=1;a<1000;a++){
+//            String url = "http://api.go2map.com/engine/api/businfo/json?hidden_MapTool=busex2.BusInfo&what="+a+"&city=%25u5317%25u4EAC&pageindex=1&pagesize=100&fromuser=bjbus&datasource=bjbus&clientid=9db0f8fcb62eb46c&cb=SGS.modules_businfo15cf80ad8ab17";
+//            String result = PBHttpUtil.GetByString(url);
+//            JSONObject jb = JSONObject.fromObject(result.substring(result.indexOf("(")+1, result.lastIndexOf(")")));
+//            if(!jb.get("status").equals("ok")){continue;}
+//            if(null==jb){
+//                continue;
+//            }
+//            JSONObject json1 = JSONObject.fromObject(jb.get("response"));
+//            if(null==json1){
+//                continue;
+//            }
+//            JSONObject json2 = JSONObject.fromObject(json1.get("resultset"));
+//            if(null==json2){
+//                continue;
+//            }
+//            JSONObject json3 = JSONObject.fromObject(json2.get("data"));
+//            if(null==json3){
+//                continue;
+//            }
+//            if(null==json2.get("curresult")){
+//                continue;
+//            }else{
+//                String curresult = json2.get("curresult").toString();
+//                if(curresult.equals("1")){
+//                    JSONObject json4 = JSONObject.fromObject(json3.get("feature"));
+//                    String idTemp = json4.get("id")+"";
+//                    String captionTemp = json4.get("caption")+"";
+//                    if(null==map.get(idTemp)){
+//                        map.put(idTemp, captionTemp);
+//                        index++;
+//                    }
+//                }else{
+//                    JSONArray json4 = json3.getJSONArray("feature");
+//                    for(int i=0;i<json4.size();i++){
+//                        JSONObject jsonTemp = JSONObject.fromObject(json4.get(i));
+//                        String idTemp = jsonTemp.get("id")+"";
+//                        String captionTemp = jsonTemp.get("caption")+"";
+//                        if(null==map.get(idTemp)){
+//                            map.put(idTemp, captionTemp);
+//                            index++;
+//                        }
+//                    } 
+//                }
+//            }
+//            Thread.sleep(500);
 //        }
-////    }
+    }
 }

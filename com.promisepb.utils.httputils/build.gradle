@@ -35,7 +35,13 @@ group = 'com.promisepb.utils'
 uploadArchives {
  repositories {
      mavenDeployer {
-         repository(url: uri('F:\\mavenrepo\\repository'))
+         repository(url: uri('E:\\mavenrepo\\repository'))
      }
  }
+}
+task createJavadoc(type: Javadoc) {
+	classpath += sourceSets.main.compileClasspath
+	source = sourceSets.main.allJava
+	options.encoding "UTF-8"  
+    options.charSet 'UTF-8'  
 }
