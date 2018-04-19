@@ -42,4 +42,25 @@ public class PBPOIExcelUtilTest {
         String result = PBPOIExcelUtil.ExportCSVBySQL(sql, connection, "d:\\ADCD_BUSLINE_REF.csv", 50,null);
         logger.info(result);
 	}
+	
+	@Test
+	public void testMergeCSVFiles() {
+		String csvPath = "D:\\2017jgjjcq-data-20180202";
+		String exportPath = "d:\\2017jgjjcq-data-20180202-merge.csv";
+		PBPOIExcelUtil.MergeCSVFiles(csvPath, exportPath, "UTF-8");
+	}
+	
+	@Test
+	public void testArrayToCSVStr() {
+		String[] testArrString = new String[3];
+		testArrString[0] = "4DE8CE166D0BF007E0530100007FBA4B";
+		testArrString[1] = "10-APR-17 08.04.00.000000 PM";
+		testArrString[2] = "东四十条,朝阳门,建国门,永安里,国贸,大望路,四惠,四惠东,高碑店,传媒大学,双桥,管庄,八里桥,通州北苑,果园,九棵树,梨园,临河里,土桥,";
+		String result = PBPOIExcelUtil.ArrayToCSVStr(testArrString);
+		System.out.println(result);
+		String[] splitArr = result.trim().split(",(?=([^\\\"]*\\\"[^\\\"]*\\\")*[^\\\"]*$)",-1); //双引号内的逗号不分割  双引号外的逗号进行分割
+		for(String str : splitArr) {
+			System.out.println(str);
+		}
+	}
 }

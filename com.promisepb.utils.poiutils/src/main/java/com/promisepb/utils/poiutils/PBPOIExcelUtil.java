@@ -4,9 +4,11 @@ import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.sql.Connection;
@@ -27,6 +29,7 @@ import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -38,6 +41,7 @@ import org.slf4j.LoggerFactory;
 
 import com.promisepb.utils.dbutils.PBDBType;
 import com.promisepb.utils.dbutils.PBDBUtil;
+import com.promisepb.utils.fileutils.PBFileUtil;
 import com.promisepb.utils.stringutils.PBStringUtil;
 
 /**  
@@ -141,7 +145,7 @@ public class PBPOIExcelUtil {
     public static <T> String ExportDataByList(List<T> list, String excelPath) {
         String result = "success";
         try {
-            Field[] fds = null;
+            List<Field> fds = new ArrayList<Field>();
             Class clazz = null;
             HSSFWorkbook workbook = new HSSFWorkbook();
             HSSFSheet sheet = workbook.createSheet();
@@ -153,22 +157,36 @@ public class PBPOIExcelUtil {
                     clazz = object.getClass();
                     workbook.setSheetName(0,clazz.getName());
                     //获取他的字段数组
-                    fds = clazz.getDeclaredFields();
+                    Field[] fdsTemp = clazz.getDeclaredFields();
+                    int fieldIndex = 0;
+                    for(Field fTemp:fdsTemp) {
+                    	POIOptionMeta meta = fTemp.getAnnotation(POIOptionMeta.class);
+                    	if(null!=meta) {
+                    		if(meta.isExport()) {
+	                    		fds.add(fieldIndex, fTemp);
+	                    		fieldIndex++;
+                    		}
+                    	}else {
+                    		fds.add(fieldIndex, fTemp);
+                    		fieldIndex++;
+                    	}
+                    }
                     HSSFRow row= sheet.createRow(0); 
                     HSSFCell cell;
-                    for(int i=0;i<fds.length;i++){  
+                    for(int i=0;i<fds.size();i++){  
                         cell = row.createCell(i);
-                        cell.setCellType(HSSFCell.CELL_TYPE_STRING);  
-                        cell.setCellValue(fds[i].getName());  
+                        cell.setCellType(CellType.STRING);  
+                        cell.setCellValue(fds.get(i).getName());  
                     }
                 }
                //遍历该数组
                HSSFRow row = sheet.createRow(iRow);
-               for(int i=0;i<fds.length;i++){
+               for(int i=0;i<fds.size();i++){
                    HSSFCell cell = row.createCell(i);
-                   cell.setCellType(HSSFCell.CELL_TYPE_STRING);
+                   cell.setCellType(CellType.STRING);
                    //得到字段名
-                   String fdname = fds[i].getName();
+                   String fdname = fds.get(i).getName();
+                   
                    //根据字段名找到对应的get方法，null表示无参数
                    Method metd = clazz.getMethod("get"+PBStringUtil.ChangeFirstUpper(fdname), new  Class[0]);
                    if (null != metd) {
@@ -234,7 +252,7 @@ public class PBPOIExcelUtil {
                     row= sheet.createRow(0); 
                     for(int i=0;i<columnStrArr.length;i++){  
                         cell = row.createCell(i);
-                        cell.setCellType(XSSFCell.CELL_TYPE_STRING);  
+                        cell.setCellType(CellType.STRING);  
                         cell.setCellValue(columnStrArr[i]);  
                     }
                     pageIndex=1;
@@ -243,7 +261,7 @@ public class PBPOIExcelUtil {
                 row= sheet.createRow(pageIndex);
                 for(int j=1;j<=nColumn;j++){
                     cell = row.createCell(j-1);
-                    cell.setCellType(XSSFCell.CELL_TYPE_STRING);
+                    cell.setCellType(CellType.STRING);
                     if(null==resultSet.getObject(j)){
                         cell.setCellValue("");
                     }else{
@@ -373,6 +391,90 @@ public class PBPOIExcelUtil {
     }
     
     
+    /**
+     * 导出数据到csv,目前支持oracle数据量大的导出
+     * @param sql sql语句 如果采用分页方式必须起别名t,并且返回字段也要加t 如select t.adcd_name,t.busline_name from ADCD_BUSLINE_REF t
+     * @param sql 如果不采用分页方式，标准sql语句就可以
+     * @param connect 数据库连接
+     * @param csvPath 导出csv路径 一定完整路径带.csv
+     * @param patchSize 大于0 采用分页方式
+     * @return
+     */
+    public static String ExportCSVBySQLList(List<String> sqlList,Connection connect,String csvPath, int patchSize,String charSet){
+    	String result = "success";
+    	try {
+    		PBDBType dbType =  PBDBUtil.GetDataBaseTypeConnection(connect);
+    		boolean head = true;
+			File csvFile = null;
+            BufferedWriter csvWtriter = null;
+            boolean fileCreate = true;
+            //创建csv文件
+            if(fileCreate){
+                csvFile = new File(csvPath);
+                if(null==charSet||charSet.trim().equals("")) {
+                	charSet = "UTF-8";
+                }
+                csvWtriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(csvFile), charSet), 10240);
+                File parent = csvFile.getParentFile();
+                if (parent != null && !parent.exists()) {
+                    parent.mkdirs();
+                }
+                csvFile.createNewFile();
+                fileCreate = false;
+                logger.info(csvPath);
+			}
+            Statement statement = null;
+            for(String sql : sqlList) {
+            	statement = connect.createStatement();
+            	if(patchSize>0) {//采用分页策略来
+        			int rowStart = 0;
+        			int rowEnd = patchSize;
+        			int step = patchSize;
+        			int index = 0;
+        			if(dbType==PBDBType.Oracle ) {
+            			sql = sql.toUpperCase().replaceFirst("SELECT", "SELECT * FROM (SELECT ROWNUM AS INDEXID,");
+            			if(sql.indexOf("WHERE")!=-1) {
+            				sql = sql+" AND ROWNUM <= #ROWEND) TABLE_ALIAS WHERE TABLE_ALIAS.INDEXID > #ROWSTART";
+            			}else {
+            				sql = sql+" WHERE ROWNUM <= #ROWEND) TABLE_ALIAS WHERE TABLE_ALIAS.INDEXID > #ROWSTART";
+            			}
+            		}
+        			boolean isOver = true;
+        			while(isOver){
+        				String sqlcurrent = sql.replace("#ROWSTART", rowStart+"").replace("#ROWEND", rowEnd+"");
+        				logger.info(sqlcurrent);
+        				ResultSet resultSet = statement.executeQuery(sqlcurrent);
+        				index = HandleResultToCSV(resultSet,csvWtriter,head);
+    					head = false;
+                        csvWtriter.flush();
+                        resultSet.close();
+                        if(index>=step){
+                        	index=0;
+                        	rowStart = rowStart+step;
+                			rowEnd = rowEnd+step;
+                        }else{
+                        	isOver = false;
+                        	statement.close();
+                        }
+        			}
+        		}else {
+        			ResultSet resultSet = statement.executeQuery(sql);
+        			HandleResultToCSV(resultSet,csvWtriter,head);
+    				head = false;
+                    csvWtriter.flush();
+                    resultSet.close();
+                    statement.close();
+        		}
+            }
+            csvWtriter.flush();
+            csvWtriter.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+			result = "fail";
+        }
+    	return result;
+    }
+    
     
     /**
      * 处理ResultSet 写入到csv文件中
@@ -407,7 +509,7 @@ public class PBPOIExcelUtil {
         	 String[] arrayTemp = new String[nColumn];
         	 for(int j=1;j<=nColumn;j++){
         		 String ss = "";
-        		 if(mapColumn.get(j)==91&&null!=resultSet.getTimestamp(j)){
+        		 if((mapColumn.get(j)==91||mapColumn.get(j)==93)&&null!=resultSet.getTimestamp(j)){
         			 ss = sdf.format(resultSet.getTimestamp(j));
         		 }else{
         			 ss = (null==resultSet.getObject(j)?"":resultSet.getObject(j).toString());
@@ -502,5 +604,30 @@ public class PBPOIExcelUtil {
                 return cell.getStringCellValue();
         }
         return cell.getStringCellValue();
+    }
+    
+    /**
+     * 合并所有的csv文件到指定的文件
+     * @param csvPath csv文件
+     * @param exportPath 输出路径
+     * @param charSet 编码
+     * @return 状态
+     */
+    public static boolean MergeCSVFiles(String csvPath,String exportPath,String charSet) {
+    	File csvFile = new File(exportPath);
+    	try {
+			BufferedWriter csvWtriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(csvFile), charSet), 10240);
+			List<File> files = new ArrayList<File>();
+			PBFileUtil.GetFilesByPath(csvPath, files);
+			for(File fileTemp : files) {
+				List<String> listStr = PBFileUtil.ReadCSVFile(fileTemp.getAbsolutePath(), charSet);
+				WriteRow(listStr,csvWtriter);
+			}
+			csvWtriter.flush();
+			csvWtriter.close();
+    	}  catch (Exception e) {
+			e.printStackTrace();
+		}
+    	return true;
     }
 }

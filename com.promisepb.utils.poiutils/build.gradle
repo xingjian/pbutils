@@ -11,7 +11,7 @@ ext{
 	slf4jVersion = "1.7.25"
 	log4jVersion = "1.2.17"
 	junitVersion = "4.12"
-	poiVersion = "3.12"
+	poiVersion = "3.17"
 	mysqlConnectorVersion = '5.1.42'
 	postgresqlConnectorVersion = '9.1-901-1.jdbc4'
 	oracleConnectorVersion = '10.2.0.4.0'
@@ -22,8 +22,10 @@ dependencies {
     compile "org.slf4j:slf4j-api:$slf4jVersion"
     compile "org.apache.poi:poi:$poiVersion"
     compile "org.apache.poi:poi-ooxml:$poiVersion"
+    compile "org.apache.poi:poi-scratchpad:$poiVersion"
     compile "com.promisepb.utils:com.promisepb.utils.dbutils:0.1"
 	compile "com.promisepb.utils:com.promisepb.utils.stringutils:0.1"
+	compile "com.promisepb.utils:com.promisepb.utils.fileutils:0.1"
 	testCompile "ch.qos.logback:logback-classic:1.1.2"
 	testCompile "ch.qos.logback:logback-core:1.1.2"
     testCompile "mysql:mysql-connector-java:$mysqlConnectorVersion"
@@ -52,7 +54,7 @@ group = 'com.promisepb.utils'
 uploadArchives {
  repositories {
      mavenDeployer {
-         repository(url: uri('F:\\mavenrepo\\repository'))
+         repository(url: uri('E:\\mavenrepo\\repository'))
      }
  }
 }
