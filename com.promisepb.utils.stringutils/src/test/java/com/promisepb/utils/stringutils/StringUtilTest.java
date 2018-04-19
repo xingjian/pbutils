@@ -23,4 +23,9 @@ public class StringUtilTest {
 		System.out.println(PBStringUtil.DayForWeek("2017-08-26"));
 		System.out.println(PBStringUtil.DayForWeek(""));
 	}
+	
+	@Test
+	public void testGetWebTime() {
+		System.out.println(PBStringUtil.GetWebTime());
+	}
 }
