@@ -214,8 +214,6 @@ public class PBMapServerUtil {
         return result;
     }
     
-    
-    
     /**
      * 根据经纬度坐标信息获取Mercator坐标的图片的索引号
      * @param x 经度
@@ -240,7 +238,6 @@ public class PBMapServerUtil {
         int ytile = (int)Math.floor((BoundMecrator[3]-y)/ResMercator[z][0]/256);
         return new int[]{(int)xtile,(int)ytile};
     }
-    
     
     /**
      * 根据指定的范围下载世纪高通地图瓦片 maptype vector 基础地图   traffic 路况图
@@ -288,7 +285,6 @@ public class PBMapServerUtil {
         result.put("error", errorList);
         return result;
     }
-    
     
     /**
      * 根据指定的范围下载百度地图瓦片 maptype vector 基础地图   traffic 路况图
@@ -338,7 +334,6 @@ public class PBMapServerUtil {
         return result;
     }
     
-    
     /**
      * 根据指定的范围下载百度地图瓦片 maptype vector 基础地图   traffic 路况图
      * @param  traffic 
@@ -379,5 +374,46 @@ public class PBMapServerUtil {
         result.put("error", errorList);
         return result;
     }
+    
+    /**
+     * 根据指定的范围下载DarkAll地图瓦片
+     * @param minX
+     * @param minY
+     * @param maxX
+     * @param maxY
+     * @param filePath
+     * @param zLevel
+     * @param format png
+     * @return map集合,下载成功和失败  key success  key error
+     */
+    public static Map<String,List<String>> GetDarkAllTileByIndexXY(double minX,double minY,double maxX,double maxY,String filePath,int zLevel,String format){
+        Map<String,List<String>> result = new HashMap<String,List<String>>();
+        List<String> successList = new ArrayList<String>();
+        List<String> errorList = new ArrayList<String>();
+        String darkAllURL= "http://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png";
+        int[] startIndexArr = GetMercatorImageXYBy3857(minX,maxY,zLevel);
+        int[] endIndexArr = GetMercatorImageXYBy3857(maxX,minY,zLevel);
+        int xStart = startIndexArr[0];
+        int yStart = startIndexArr[1];
+        int xEnd = endIndexArr[0];
+        int yEnd = endIndexArr[1];
+        //从左上角(x最小 y最大)循环变量到右下角(x最大 y最小) 
+        for(int y=yStart;y<=yEnd;y++){
+            for(int x=xStart;x<=xEnd;x++){
+                try {
+                    PBHttpUtil.GetImageByURI(filePath+File.separator+zLevel+File.separator+y, x+"."+format, darkAllURL.replace("{x}", x+"").replace("{y}", y+"").replace("{z}", zLevel+""));
+                    successList.add(zLevel+"-"+y+"-"+x+":"+darkAllURL.replace("{x}", x+"").replace("{y}", y+"").replace("{z}", zLevel+""));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    errorList.add(zLevel+"-"+y+"-"+x+":"+darkAllURL.replace("{x}", x+"").replace("{y}", y+"").replace("{z}", zLevel+""));
+                    PBFileUtil.copyToFile(filePath+File.separator+"default.png", filePath+File.separator+zLevel+File.separator+y+File.separator+x+"."+format);
+                } 
+            }
+        }
+        result.put("success", successList);
+        result.put("error", errorList);
+        return result;
+    }
+    
     
 }

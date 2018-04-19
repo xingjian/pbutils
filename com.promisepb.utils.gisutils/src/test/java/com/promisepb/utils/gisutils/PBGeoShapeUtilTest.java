@@ -7,6 +7,7 @@ import org.geotools.data.DataStore;
 import org.junit.Test;
 
 import com.vividsolutions.jts.geom.MultiLineString;
+import com.vividsolutions.jts.geom.MultiPolygon;
 
 /**  
  * 功能描述:
@@ -38,19 +39,65 @@ public class PBGeoShapeUtilTest {
 		DataStore dataStor = PBGISDBUtil.GetDataStoreFromPostGIS("localhost", "5433", "opengis", "postgres", "000000","public");
 		String charSet = "GBK";
 		String tableName = "lpf_sh_xzcd";
-		Class classzs = MultiLineString.class;
 		String crs = "EPSG:4326";
-		String result = PBGeoShapeUtil.ShapeToPostGIS(shapePath, dataStor, charSet, tableName, classzs, crs);
+		String result = PBGeoShapeUtil.ShapeToPostGIS(shapePath, dataStor, charSet, tableName, MultiLineString.class, crs);
 		System.out.println(result);
 	}
 	
 	@Test
 	public void testCreatePointShapeByTxt() {
 		String crs = "EPSG:4326";
-		String txtpath = "F:\\toccworkspace\\didigps\\result\\B_G_2016_08_01_da.csv";
+		String txtpath = "E:\\tempworkspace\\zzgml\\zz-bus.csv";
 		String encoding = "GBK";
-		String topath = "F:\\toccworkspace\\lpfgps\\gps_03_xj.shp";
-		String[] attriDesc = new String[]{"fid:int","id:String","beijingTime:String","x:double","y:double","speed:double","directionAngle:double"};
+		String topath = "E:\\tempworkspace\\zzgml\\zz-bus-gps.shp";
+		String[] attriDesc = new String[]{"id:String","beijingTime:String","x:double","y:double","speed:double","mzl:double"};
 		PBGeoShapeUtil.CreatePointShapeByTxt(txtpath, ",", crs, encoding, attriDesc, topath);
 	}
+	
+	/**
+	 * 导入林鹏飞北京ring_road
+	 */
+	@Test
+	public void testShapeToPostGISLPFRing() {
+		String shapePath = "F:\\project\\北京工业大学\\林鹏飞\\shape\\ring_road\\sixring.shp";
+		DataStore dataStor = PBGISDBUtil.GetDataStoreFromPostGIS("localhost", "5432", "gistest", "postgis", "postgis","public");
+		String charSet = "GBK";
+		String tableName = "sixring_lpf";
+		String crs = "EPSG:4326";
+		String result = PBGeoShapeUtil.ShapeToPostGIS(shapePath, dataStor, charSet, tableName, MultiPolygon.class, crs);
+		System.out.println(result);
+	}
+	
+	/**
+	 * 导入北京行政区划shape数据到postgis
+	 * 2180302
+	 */
+	@Test
+	public void testShapeToPostGIS1() {
+		String shapePath = "E:\\gisworkspace\\shape_data\\北京行政区划\\beijing_adcd.shp";
+		DataStore dataStor = PBGISDBUtil.GetDataStoreFromPostGIS("localhost", "5432", "gis_data", "postgres", "000000","public");
+		String charSet = "GBK";
+		String tableName = "beijing_adcd";
+		Class classzs = MultiPolygon.class;
+		String crs = "EPSG:4326";
+		String result = PBGeoShapeUtil.ShapeToPostGIS(shapePath, dataStor, charSet, tableName, classzs, crs);
+		System.out.println(result);
+	}
+	
+	/**
+	 * 导入北京行政区划shape数据到postgis
+	 * 2180304
+	 */
+	@Test
+	public void testShapeToPostGIS2() {
+		String shapePath = "E:\\gisworkspace\\shape_data\\北京整体面要素\\beijing_border.shp";
+		DataStore dataStor = PBGISDBUtil.GetDataStoreFromPostGIS("localhost", "5432", "gis_data", "postgres", "000000","public");
+		String charSet = "GBK";
+		String tableName = "beijing_out_border";
+		Class classzs = MultiPolygon.class;
+		String crs = "EPSG:4326";
+		String result = PBGeoShapeUtil.ShapeToPostGIS(shapePath, dataStor, charSet, tableName, classzs, crs);
+		System.out.println(result);
+	}
+	
 }

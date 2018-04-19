@@ -38,10 +38,10 @@ dependencies {
     compile "org.apache.poi:poi:$poiVersion"
     compile "org.apache.poi:poi-ooxml:$poiVersion"
     compile "com.promisepb.utils:com.promisepb.utils.dbutils:0.1"
-     compile "com.promisepb.utils:com.promisepb.utils.gisdata:0.1"
-    compile files('../com.promisepb.utils.stringutils/build/libs/com.promisepb.utils.stringutils-0.1.jar')
-    compile files('../com.promisepb.utils.httputils/build/libs/com.promisepb.utils.httputils-0.1.jar')
-    compile files('../com.promisepb.utils.fileutils/build/libs/com.promisepb.utils.fileutils-0.1.jar')
+    compile "com.promisepb.utils:com.promisepb.utils.gisdata:0.1"
+    compile "com.promisepb.utils:com.promisepb.utils.stringutils:0.1"
+    compile "com.promisepb.utils:com.promisepb.utils.httputils:0.1"
+    compile "com.promisepb.utils:com.promisepb.utils.fileutils:0.1"
     testCompile "junit:junit:$junitVersion"
 }
 
@@ -60,7 +60,7 @@ group = 'com.promisepb.utils'
 uploadArchives {
  repositories {
      mavenDeployer {
-         repository(url: uri('F:\\mavenrepo\\repository'))
+         repository(url: uri('E:\\mavenrepo\\repository'))
      }
  }
 }
