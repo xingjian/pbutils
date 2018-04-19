@@ -68,7 +68,7 @@ public class PBGraphUtilTest {
 	
 	@Test
 	public void testBuildGraphByShape1() {
-		String filePath = "F:\\toccworkspace\\pathfind\\bj_topy.csv";
+		String filePath = "E:\\tempworkspace\\pathfind\\bj_topy.csv";
 		try {
 			Graph graph = PBGraphUtil.BuildGraphBySWTopyFile(filePath, "GBK");
 			DijkstraIterator.EdgeWeighter weighter = new DijkstraIterator.EdgeWeighter(){
