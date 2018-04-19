@@ -41,7 +41,22 @@ group = 'com.promisepb.utils'
 uploadArchives {
  repositories {
      mavenDeployer {
-         repository(url: uri('F:\\mavenrepo\\repository'))
+         repository(url: uri('E:\\mavenrepo\\repository'))
      }
  }
 }
+
+uploadArchives {  
+    repositories {  
+        mavenDeployer {
+            repository(url: "http://192.168.1.105:9002/nexus/content/repositories/thirdparty/") {  
+                authentication(userName: "admin", password: "fld789987")  
+            }  
+            pom.project {
+                name=project.name
+                packaging='jar'  
+                description='dbutils'  
+            }
+        }  
+    }  
+} 
