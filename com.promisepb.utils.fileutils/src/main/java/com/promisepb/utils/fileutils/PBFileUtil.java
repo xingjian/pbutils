@@ -28,6 +28,9 @@ import java.util.Properties;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.IOUtils;
+
 /**  
  * 功能描述: 文件帮助类
  * @author:<a href="mailto:xingjian@tongtusoft.com.cn">邢健</a>  
@@ -36,6 +39,7 @@ import java.util.zip.ZipInputStream;
  */
 public class PBFileUtil {
 
+	public static String ERROR = "error";
 	
 	 /**
      * 读取文件按行读取去除两边空格之后,将每行加入到集合list当中
@@ -625,5 +629,37 @@ public class PBFileUtil {
     		e.printStackTrace();
     	}
     }
-    	
+    
+    /**
+     * 生成文件MD5
+     * @param filePath
+     * @return
+     */
+    public static String GetFileMD5Code(String filePath) {
+    	String result = ERROR;
+    	FileInputStream fis = null;
+		try {
+			fis = new FileInputStream(filePath);
+			result = DigestUtils.md5Hex(IOUtils.toByteArray(fis));
+			fis.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}   
+       return result;
+    }
+    
+    /**
+     * 判断两个文件是否一样
+     * @param filePath
+     * @param otherFilePath
+     * @return
+     */
+    public static boolean IsSameFile(String filePath,String otherFilePath) {
+    	String md51 = GetFileMD5Code(filePath);
+    	String md52 = GetFileMD5Code(otherFilePath);
+    	return md51.equals(md52);
+    }
+    
 }

@@ -26,4 +26,22 @@ public class PBFileUtilTest {
 			System.out.println(f.getAbsolutePath());
 		}
 	}
+	
+	@Test
+	public void testGetFileMD5Code() {
+		String filePath = "d:\\某某项目-运维周报20171002-20171008.docx";
+		String md51 = PBFileUtil.GetFileMD5Code(filePath);
+		String filePath2 = "d:\\某某项目-运维周报20171002-20171008 - 副本.docx";
+		String md52 = PBFileUtil.GetFileMD5Code(filePath2);
+		System.out.println(md51);
+		System.out.println(md52);
+	}
+	
+	@Test
+	public void testIsSameFile() {
+		String filePath = "d:\\某某项目-运维周报20171002-20171008.docx";
+		String filePath2 = "d:\\某某项目-运维周报20171002-20171008 - 副本.docx";
+		boolean boo = PBFileUtil.IsSameFile(filePath, filePath2);
+		System.out.println(boo);
+	}
 }
