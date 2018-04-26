@@ -47,7 +47,7 @@ public class FTPUtil {
 		boolean result = false;
 		ftpClient = new FTPClient();
 		try {
-			ftpClient.setControlEncoding("utf-8");
+			ftpClient.setControlEncoding(controlEncoding);
 			ftpClient.connect(hostName, port); // 连接ftp服务器
 			ftpClient.login(userName, passwd); // 登录ftp服务器
 			ftpClient.enterLocalPassiveMode();
@@ -65,6 +65,25 @@ public class FTPUtil {
 		return result;
 	}
 
+	public static void GetFilesByPath(String filePath,List<FTPFileInfo> result){
+        if(null==result){
+            result  = new ArrayList<FTPFileInfo>();
+        }
+		try {
+			List<FTPFileInfo> list = ListFiles(filePath);
+			for(FTPFileInfo file:list){
+	            if(file.isDirectory()){
+	                GetFilesByPath(filePath+File.separator+file.getName(),result);
+	            }else{
+	                result.add(file);
+	            }     
+	        }
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+        
+    }
+	
 	/**
 	 * 获取制定文件路径文件列表
 	 * @param filePath 文件目录路径
@@ -82,6 +101,7 @@ public class FTPUtil {
 			fi.setSize(ftpFile.getSize());
 			fi.setTimestamp(format.format(ftpFile.getTimestamp().getTime()));
 			fi.setDirectory(ftpFile.isDirectory());
+			fi.setFtpPath(filePath+File.separator+ftpFile.getName());
 			fileList.add(fi);
 		}
 		return fileList;

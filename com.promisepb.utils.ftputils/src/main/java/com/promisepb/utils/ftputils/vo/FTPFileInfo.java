@@ -15,6 +15,7 @@ public class FTPFileInfo {
 		public Long size;
 		public String timestamp;
 		public boolean isDirectory;
+		public String ftpPath;
 		public String getName() {
 			return name;
 		}
@@ -38,6 +39,12 @@ public class FTPFileInfo {
 		}
 		public void setDirectory(boolean isDirectory) {
 			this.isDirectory = isDirectory;
+		}
+		public String getFtpPath() {
+			return ftpPath;
+		}
+		public void setFtpPath(String ftpPath) {
+			this.ftpPath = ftpPath;
 		}
 		
 		
